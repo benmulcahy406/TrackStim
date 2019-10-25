@@ -1,7 +1,7 @@
-import mmcorej.CMMCore;
-
 import org.micromanager.api.MMPlugin;
 import org.micromanager.api.ScriptInterface;
+
+import mmcorej.CMMCore;
 
 public class TrackStimPlugin implements MMPlugin {
    public static final String menuName = "TrackStim";

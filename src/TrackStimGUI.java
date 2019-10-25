@@ -1,63 +1,34 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.prefs.Preferences;
-
-import java.awt.TextField;
-import java.awt.Label;
-import java.awt.GridBagConstraints;
-import java.awt.Dimension;
-import java.awt.Checkbox;
-import java.awt.Rectangle;
-import java.awt.Point;
 import java.awt.Button;
+import java.awt.Checkbox;
 import java.awt.Choice;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-
+import java.awt.Label;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseEvent;
+import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.ActionEvent;
-import java.awt.event.ItemEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.File;
+import java.util.prefs.Preferences;
 
+import ij.IJ;
 import ij.ImageListener;
 import ij.ImagePlus;
-import ij.IJ;
 import ij.WindowManager;
-import ij.ImageStack;
-
-import ij.io.DirectoryChooser;
-import ij.io.FileInfo;
-import ij.io.TiffEncoder;
-
-import ij.process.ImageProcessor;
-import ij.process.ImageStatistics;
-
-import ij.gui.Roi;
-import ij.gui.Wand;
 import ij.gui.ImageCanvas;
 import ij.gui.ImageWindow;
-import ij.gui.PolygonRoi;
-
-import ij.plugin.filter.EDM;
-import ij.plugin.filter.RankFilters;
 import ij.plugin.frame.PlugInFrame;
-
-import java.io.File;
-import java.io.OutputStream;
-import java.io.FileOutputStream;
-
+import javafx.stage.DirectoryChooser;
 import mmcorej.CMMCore;
-import mmcorej.MMCoreJ;
-import mmcorej.StrVector;
-import mmcorej.Configuration;
-import mmcorej.PropertySetting;
 
 // provides the ui for track stim
 
-// implements a ImageJ plugin interface 
+// implements a ImageJ plugin interface
 // **NOTE**: There is a big difference between a micro manager plugin and an imagej plugin
 // this program was initially designed as an imageJ plugin, but is now wrapped inside a micromanager plugin
 // to migrate it to new versions of micromanager

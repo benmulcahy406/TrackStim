@@ -1,37 +1,25 @@
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 
-
-import java.io.File;
-import java.io.OutputStream;
-import java.io.FileOutputStream;
-
-import java.awt.Rectangle;
-import java.awt.Point;
-
-
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-
-import ij.io.TiffEncoder;
+import ij.gui.ImageCanvas;
+import ij.gui.PolygonRoi;
+import ij.gui.Roi;
+import ij.gui.Wand;
 import ij.io.FileInfo;
-
-
+import ij.io.TiffEncoder;
+import ij.plugin.filter.EDM;
+import ij.plugin.filter.RankFilters;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
-
-import ij.plugin.filter.RankFilters;
-import ij.plugin.filter.EDM;
-
-
-
-import ij.gui.Roi;
-import ij.gui.PolygonRoi;
-import ij.gui.Wand;
-import ij.gui.ImageCanvas;
-
 import mmcorej.CMMCore;
 
 
@@ -159,7 +147,7 @@ class Tracker extends Thread {
             IJ.log(e.getMessage());
         }
         IJ.log("xyStagePort is " + port);
-        
+
         return port;
     }
 
@@ -934,7 +922,7 @@ class Tracker extends Thread {
                                 ImageProcessor ip_current = inverted.getProcessor();
                                 if (tpf.BF.getState())// for brightfield
                                 {
-                                    ip_current.invert(); // turn this off for now because it causes flashing 
+                                    ip_current.invert(); // turn this off for now because it causes flashing
                                 }
                                 ImagePlus impinv = new ImagePlus("l", ip_current);
                                 // get data and put it into double[] distancefromcenter =new double[2];
