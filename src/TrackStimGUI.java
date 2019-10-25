@@ -23,7 +23,7 @@ import ij.WindowManager;
 import ij.gui.ImageCanvas;
 import ij.gui.ImageWindow;
 import ij.plugin.frame.PlugInFrame;
-import javafx.stage.DirectoryChooser;
+import ij.io.DirectoryChooser;
 import mmcorej.CMMCore;
 
 // provides the ui for track stim
