@@ -129,6 +129,11 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
         Button b = new Button("Ready");
         b.setPreferredSize(new Dimension(100, 60));
         b.addActionListener(this);
+        b.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                onReadyButtonClicked(evt);
+            }
+        });
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
@@ -139,6 +144,11 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
         Button b2 = new Button("Go");
         b2.setPreferredSize(new Dimension(100, 60));
         b2.addActionListener(this);
+        b.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                onGoButtonClicked(evt);
+            }
+        });
         gbc.gridx = 2;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
@@ -149,6 +159,11 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
         Button b3 = new Button("Stop");
         b3.setPreferredSize(new Dimension(100, 60));
         b3.addActionListener(this);
+        b.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                onStopButtonClicked(evt);
+            }
+        });
         gbc.gridx = 4;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
@@ -213,6 +228,12 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
 
         framenumtext = new TextField(String.valueOf(frame), 5);
         framenumtext.addActionListener(this);
+        framenumtext.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                onFrameNumTextChange(evt);
+            }
+        });
+
         gbc.gridx = 1;
         gbc.gridy = 2;
         gbc.gridwidth = 1;
@@ -329,6 +350,12 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
 
         savedir = new TextField(dir, 40);
         savedir.addActionListener(this);
+        savedir.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                onSaveDirTextChange(evt);
+            }
+        });
+
         gbc.gridx = 1;
         gbc.gridy = 4;
         gbc.gridwidth = 5;
@@ -339,6 +366,11 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
 
         Button b4 = new Button("Change dir");
         b4.addActionListener(this);
+        b.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                onChangeDirClicked(evt);
+            }
+        });
         gbc.gridx = 6;
         gbc.gridy = 4;
         gbc.gridwidth = 2;
@@ -357,6 +389,11 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
         b = new Button("Run");
         b.setPreferredSize(new Dimension(40, 20));
         b.addActionListener(this);
+        b.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                onRunButtonClicked(evt);
+            }
+        });
         gbc.gridx = 0;
         gbc.gridy = 6;
         gbc.gridwidth = 1;
@@ -553,58 +590,60 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
 
     }
 
-    // handle button presses
-    public void actionPerformed(ActionEvent e) {
-        String itemChanged = e.getActionCommand();
+    void onFrameNumTextChange(ActionEvent e){
+        validateFrameField();
+        IJ.log("actionPerformed: frame is " + String.valueOf(frame));
+    }
 
-        IJ.log("actionPerformed: button clicked is " + itemChanged);
+    void onSaveDirTextChange(ActionEvent e){
+        validateDirField();
+        IJ.log("actionPerformed: frame is " + String.valueOf(frame));
+    }
 
-        // frame num changed
-        if (itemChanged.equals(framenumtext.getText())){
-            validateFrameField();
-            IJ.log("actionPerformed: frame is " + String.valueOf(frame));
+    void onReadyButtonClicked(ActionEvent e){
+        ready = true;
+        validateAndStartTracker();
+    }
 
-            // savedir has changed
-        } else if (itemChanged.equals(savedir.getText())){
-            validateDirField();
-            IJ.log("actionPerformed: directory is " + savedir.getText());
+    void onGoButtonClicked(ActionEvent e){
+        boolean frameNumValid = validateFrameField();
+        boolean dirPathValid = validateDirField();
+        boolean useStimulator = STIM.getState();
 
-            // any button pushed
-        } else {
+        // frame number is valid and directory exists
+        if (frameNumValid && dirPathValid) {
 
-            // ready button pushed
-            if (itemChanged.equals("Ready")) {
-                ready = true;
-                validateAndStartTracker();
+            dir = savedir.getText();
 
-                // go button pressed
-            } else if (itemChanged.equals("Go")) {
+            createNewTempDirectory(dir);
 
-                // frame number is valid and directory exists
-                if (validateFrameField() && validateDirField()) {
-                    dir = savedir.getText();
-                    createNewTempDirectory(dir);
-                    stopTracker();
+            stopTracker();
 
-                    ready = false;
+            ready = false;
 
-                    if (STIM.getState()) {
-                        validateAndStartStimulation();
-                    }
-                    validateAndStartTracker();
-                }
-            } else if (itemChanged.equals("Stop")) {
-                stopTracker();
-
-            } else if (itemChanged.equals("Change dir")) {
-                DirectoryChooser dc = new DirectoryChooser("Directory for temp folder");
-                String dcdir = dc.getDirectory();
-                savedir.setText(dcdir);
-            } else if (itemChanged.equals("Run")){
-                IJ.log("actionPerformed: RUN was pressed, running stimulation");
+            if (useStimulator) {
                 validateAndStartStimulation();
             }
+            validateAndStartTracker();
         }
+    }
+
+    void onStopButtonClicked(ActionEvent e){
+        stopTracker();
+    }
+
+    void onChangeDirClicked(ActionEvent e){
+        DirectoryChooser dc = new DirectoryChooser("Directory for temp folder");
+        String dcdir = dc.getDirectory();
+        savedir.setText(dcdir);
+    }
+
+    void onRunButtonClicked(ActionEvent e){
+        IJ.log("RUN was pressed, running stimulation");
+        validateAndStartStimulation();
+    }
+
+    public void actionPerformed(ActionEvent e) {
     }
 
     // kill the Tracker, and also stop the image acquisition loop
