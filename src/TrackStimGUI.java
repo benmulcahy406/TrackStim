@@ -1,63 +1,34 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.prefs.Preferences;
-
-import java.awt.TextField;
-import java.awt.Label;
-import java.awt.GridBagConstraints;
-import java.awt.Dimension;
-import java.awt.Checkbox;
-import java.awt.Rectangle;
-import java.awt.Point;
 import java.awt.Button;
+import java.awt.Checkbox;
 import java.awt.Choice;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-
+import java.awt.Label;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseEvent;
+import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.ActionEvent;
-import java.awt.event.ItemEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.File;
+import java.util.prefs.Preferences;
 
+import ij.IJ;
 import ij.ImageListener;
 import ij.ImagePlus;
-import ij.IJ;
 import ij.WindowManager;
-import ij.ImageStack;
-
-import ij.io.DirectoryChooser;
-import ij.io.FileInfo;
-import ij.io.TiffEncoder;
-
-import ij.process.ImageProcessor;
-import ij.process.ImageStatistics;
-
-import ij.gui.Roi;
-import ij.gui.Wand;
 import ij.gui.ImageCanvas;
 import ij.gui.ImageWindow;
-import ij.gui.PolygonRoi;
-
-import ij.plugin.filter.EDM;
-import ij.plugin.filter.RankFilters;
 import ij.plugin.frame.PlugInFrame;
-
-import java.io.File;
-import java.io.OutputStream;
-import java.io.FileOutputStream;
-
+import ij.io.DirectoryChooser;
 import mmcorej.CMMCore;
-import mmcorej.MMCoreJ;
-import mmcorej.StrVector;
-import mmcorej.Configuration;
-import mmcorej.PropertySetting;
 
 // provides the ui for track stim
 
-// implements a ImageJ plugin interface 
+// implements a ImageJ plugin interface
 // **NOTE**: There is a big difference between a micro manager plugin and an imagej plugin
 // this program was initially designed as an imageJ plugin, but is now wrapped inside a micromanager plugin
 // to migrate it to new versions of micromanager
@@ -117,9 +88,7 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
         ic.addMouseListener(this);
 
         stimulator = new Stimulator(mmc_);
-
         boolean stimulatorConnected = stimulator.initialize();
-
         if( !stimulatorConnected ){
             IJ.log("TrackStimGUI Constructor: could not initialize stimulator.  Stimulator related options will not work");
         }
@@ -140,26 +109,14 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
             IJ.log(e.getMessage());
         }
 
-        int dircount = 0;
         if (dir == "") {
             // check directry in the current
             dir = IJ.getDirectory("current");
             if (dir == null) {
                 dir = IJ.getDirectory("home");
             }
-            IJ.log("TrackStimGUI Constructor: initial dir is " + dir);
-            File currentdir = new File(dir);
-            File[] filelist = currentdir.listFiles();
-            if (filelist != null) {
-                for (int i = 0; i < filelist.length; i++) {
-                    if (filelist[i].isDirectory()) {
-                        dircount++;
-                    }
-                }
-            }
         }
         IJ.log("TrackStimGUI Constructor: initial dir is " + dir);
-        IJ.log("TrackStimGUI Constructor: number of directories is " + String.valueOf(dircount));
 
         ImagePlus.addImageListener(this);
         requestFocus(); // may need for keylistener
@@ -565,53 +522,6 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
         setVisible(true);
     }
 
-    public void imageOpened(ImagePlus imp) {
-    }
-
-    public void imageUpdated(ImagePlus imp) {
-    }
-
-    // Write logic to clear valables when image closed here
-    public void imageClosed(ImagePlus impc) {
-        IJ.log("imageClosed: cleaning up");
-        if (imp == impc) {
-            imp = null;
-            IJ.log("imageClosed: imp set to null");
-        }
-    }
-
-    // validate the frame field in the UI
-    boolean checkFrameField(){
-        int testint;
-
-        try {
-            testint = Integer.parseInt(framenumtext.getText());
-            frame = testint;
-            return true;
-        } catch (java.lang.Exception e) {
-            IJ.log("checkFrameField: the current value of the frame field is not an int");
-            IJ.log(e.getMessage());
-            framenumtext.setText(String.valueOf(frame));
-            return false;
-        }
-    }
-
-    // validate the directory field in the UI
-    boolean checkDirField(){
-        String dirName = savedir.getText();
-        File checkdir = new File(dirName);
-
-        if (checkdir.exists()) {
-            IJ.log("checkDirField: directory " + dirName + " exists");
-            dir = savedir.getText();
-            return true;
-        } else {
-            IJ.log("checkDirField: directory " + dirName + " DOES NOT EXIST! Please create the directory first");
-            savedir.setText(dir);
-            return false;
-        }
-    }
-
     // method required by ItemListener
     public void itemStateChanged(ItemEvent e) {
 
@@ -645,117 +555,97 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
 
     // handle button presses
     public void actionPerformed(ActionEvent e) {
-        ImagePlus currentimp = WindowManager.getCurrentImage();
-        String lable = e.getActionCommand();
+        String itemChanged = e.getActionCommand();
 
-        IJ.log("actionPerformed: button clicked is " + lable);
+        IJ.log("actionPerformed: button clicked is " + itemChanged);
 
         // frame num changed
-        if (lable.equals(framenumtext.getText())){
-            boolean checkframefield = checkFrameField();
+        if (itemChanged.equals(framenumtext.getText())){
+            validateFrameField();
             IJ.log("actionPerformed: frame is " + String.valueOf(frame));
 
             // savedir has changed
-        } else if (lable.equals(savedir.getText())){
-            checkDirField();
+        } else if (itemChanged.equals(savedir.getText())){
+            validateDirField();
             IJ.log("actionPerformed: directory is " + savedir.getText());
 
             // any button pushed
         } else {
 
             // ready button pushed
-            if (lable.equals("Ready")) {
+            if (itemChanged.equals("Ready")) {
                 ready = true;
                 validateAndStartTracker();
 
                 // go button pressed
-            } else if (lable.equals("Go")) {
+            } else if (itemChanged.equals("Go")) {
 
                 // frame number is valid and directory exists
-                if (checkFrameField() && checkDirField()) {
+                if (validateFrameField() && validateDirField()) {
                     dir = savedir.getText();
-                    prefs.put("DIR", dir); // save in the preference
-                    prefs.put("FRAME", String.valueOf(frame));
-
-                    // get count number of directories N so that we can create directory N+1
-                    File currentdir = new File(dir);
-                    File[] filelist = currentdir.listFiles();
-                    int dircount = 0;
-                    for (int i = 0; i < filelist.length; i++) {
-                        if (filelist[i].isDirectory()) {
-                            dircount++;
-                        }
-                    }
-
-                    IJ.log("actionPerformed: number for directories in " + dir + " is: " + String.valueOf(dircount));
-                    int i = 1;
-                    File newdir = new File(dir + "temp" + String.valueOf(dircount + i));
-                    while (newdir.exists()) {
-                        i++;
-                        newdir = new File(dir + "temp" + String.valueOf(dircount + i));
-                    }
-
-                    newdir.mkdir();
-                    dirforsave = newdir.getPath();// this one doen't have "/" at the end
-                    IJ.log("actionPerformed: created new directory " + dirforsave);
-
-                    // check if the tracking thread is running
-                    if (tt != null){
-                        if (tt.isAlive()) {
-                            IJ.log("actionPerformed: GO was pressed but the tracking thread is still running, stopping sequence acquisition");
-
-                            // stop by stopping sequence acquisition. don't know better way but seems work.
-                            try {
-                                // probably this code cause lots of death of micromanager?
-                                // cant solve now.
-                                mmc_.stopSequenceAcquisition();
-                            } catch (java.lang.Exception ex) {
-                                IJ.log("actionPerformed: GO was pressed but could not stop previous thread sequence acquisition");
-                                IJ.log(ex.getMessage());
-                            }
-                        } else {
-                            IJ.log("actionPerformed: GO was pressed and the tracking thread is not active, nothing needs to be done");
-                        }
-
-                        IJ.log("actionPerformed: GO was pressed, setting tracking thread to null before creating new tracking thread");
-                        tt = null;
-                    } else {
-                        IJ.log("actionPerformed: GO was pressed and tracking thread is null, nothing to do before creating new tracking thread");
-                    }
+                    createNewTempDirectory(dir);
+                    stopTracker();
 
                     ready = false;
+
                     if (STIM.getState()) {
                         validateAndStartStimulation();
                     }
                     validateAndStartTracker();
                 }
-            } else if (lable.equals("Stop")) {
+            } else if (itemChanged.equals("Stop")) {
+                stopTracker();
 
-                if (tt != null) {
-                    if (tt.isAlive()) {
-                        IJ.log("actionPerformed: STOP was pressed, stopping sequence acquisition");
-                        try {
-                            mmc_.stopSequenceAcquisition();
-                        } catch (java.lang.Exception ex) {
-                            IJ.log("actionPerformed: STOP was pressed but could not stop previous thread sequence acquisition");
-                            IJ.log(ex.getMessage());
-                        }
-                    } else {
-                        IJ.log("actionPerformed: STOP was pressed, but the tracking thread is not alive, nothing to do");
-                    }
-                } else {
-                    IJ.log("actionPerformed: STOP was pressed, but the tracking thread is null, nothing to do");
-                }
-
-            } else if (lable.equals("Change dir")) {
+            } else if (itemChanged.equals("Change dir")) {
                 DirectoryChooser dc = new DirectoryChooser("Directory for temp folder");
                 String dcdir = dc.getDirectory();
                 savedir.setText(dcdir);
-            } else if (lable.equals("Run")){
+            } else if (itemChanged.equals("Run")){
                 IJ.log("actionPerformed: RUN was pressed, running stimulation");
                 validateAndStartStimulation();
             }
         }
+    }
+
+    // kill the Tracker, and also stop the image acquisition loop
+    void stopTracker(){
+        if (tt != null && tt.isAlive()){
+            try {
+                mmc_.stopSequenceAcquisition();
+            } catch (java.lang.Exception ex) {
+                IJ.log("TrackStim.stopTracker: error trying to stop tracker");
+                IJ.log(ex.getMessage());
+            }
+        }
+        tt = null;
+    }
+
+    // given directoryRoot d, find the number of sub directories sd in d that are of the form tempN where N is a number
+    // create a new temp directory tempN+1
+    // e.g. the highest current temp directory is temp10
+    // create temp directory temp11
+    void createNewTempDirectory(String directoryRoot){
+        File currentDir = new File(directoryRoot);
+        File[] fileList = currentDir.listFiles();
+        int dirCount = 0;
+
+
+        for (int i = 0; i < fileList.length; i++) {
+            if (fileList[i].isDirectory()) {
+                dirCount++;
+            }
+        }
+
+        int i = 1;
+        File newDir = new File(directoryRoot + "temp" + String.valueOf(dirCount + i));
+        while (newDir.exists()) {
+            i++;
+            newDir = new File(directoryRoot + "temp" + String.valueOf(dirCount + i));
+        }
+
+        newDir.mkdir();
+        dirforsave = newDir.getPath();// this one doen't have "/" at the end
+        IJ.log("createNewTempDirectory: created new directory " + dirforsave);
     }
 
     void validateAndStartTracker(){
@@ -782,19 +672,47 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
         }
     }
 
-    /** Handle the key typed event from the text field. */
-    public void keyTyped(KeyEvent e) {
-        IJ.log("keyTyped: " + KeyEvent.getKeyText(e.getKeyCode()));
+    // validate the frame field in the UI
+    boolean validateFrameField(){
+        int testint;
+
+        try {
+            testint = Integer.parseInt(framenumtext.getText());
+            frame = testint;
+            prefs.put("FRAME", String.valueOf(frame));
+            return true;
+        } catch (java.lang.Exception e) {
+            IJ.log("TrackStimGUI.validateFrameField: the current value of the frame field is not an int");
+            IJ.log(e.getMessage());
+            framenumtext.setText(String.valueOf(frame));
+            return false;
+        }
     }
 
-    /** Handle the key-pressed event from the text field. */
-    public void keyPressed(KeyEvent e) {
-        IJ.log("keyPressed: " + KeyEvent.getKeyText(e.getKeyCode()));
+    // validate the directory field in the UI
+    boolean validateDirField(){
+        String dirName = savedir.getText();
+        File checkdir = new File(dirName);
+
+        if (checkdir.exists()) {
+            IJ.log("TrackStimGUI.checkDirField: directory " + dirName + " exists");
+            dir = savedir.getText();
+            prefs.put("DIR", dir); // save in the preference
+            return true;
+        } else {
+            IJ.log("TrackStimGUI.checkDirField: directory " + dirName + " DOES NOT EXIST! Please create the directory first");
+            savedir.setText(dir);
+            return false;
+        }
     }
 
-    /** Handle the key-released event from the text field. */
-    public void keyReleased(KeyEvent e) {
-        IJ.log("keyReleased: " + KeyEvent.getKeyText(e.getKeyCode()));
+    // Write logic to clear valables when image closed here
+    public void imageClosed(ImagePlus impc) {
+        IJ.log("imageClosed: cleaning up");
+        if (imp == impc) {
+            imp = null;
+            IJ.log("imageClosed: imp set to null");
+        }
     }
 
     // Handle mouse click
@@ -806,6 +724,24 @@ class TrackStimGUI extends PlugInFrame implements ActionListener, ImageListener,
                 tt.changeTarget();
             }
         }
+    }
+
+    /** Handle the key typed event from the text field. */
+    public void keyTyped(KeyEvent e) {
+    }
+
+    /** Handle the key-pressed event from the text field. */
+    public void keyPressed(KeyEvent e) {
+    }
+
+    /** Handle the key-released event from the text field. */
+    public void keyReleased(KeyEvent e) {
+    }
+
+    public void imageOpened(ImagePlus imp) {
+    }
+
+    public void imageUpdated(ImagePlus imp) {
     }
 
     public void mouseEntered(MouseEvent e) {
