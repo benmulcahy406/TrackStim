@@ -25,7 +25,7 @@ import mmcorej.CMMCore;
 
 class Tracker extends Thread {
     // vaiables recieve from GUI
-    TrackStimGUI tpf;
+    TrackStimController tpf;
     CMMCore mmc_;
     ImagePlus imp;
     ImageCanvas ic;
@@ -64,15 +64,15 @@ class Tracker extends Thread {
     // allowance distance change
     static double mindistancechange = 0.3;
 
-    Tracker(TrackStimGUI gui) {
+    Tracker(TrackStimController tsc) {
         IJ.log("Tracker constructor");
-        this.tpf = gui;
-        mmc_ = tpf.mmc_;
-        imp = tpf.imp;
-        ic = tpf.ic;
-        dirforsave = tpf.dirforsave;
-        frame = tpf.frame;// String defaultframestring;
-        ready = tpf.ready;
+        this.tpf = tsc;
+        mmc_ = tsc.mmc;
+        imp = tsc.imp;
+        ic = tsc.ic;
+        dirforsave = tsc.savePath;
+        frame = tsc.numFrames;// String defaultframestring;
+        ready = tsc.ready;
 
     }
 
@@ -87,7 +87,7 @@ class Tracker extends Thread {
         IJ.log("changeTarget: x is " + String.valueOf(cursorpoint.x) + ", y is " + String.valueOf(cursorpoint.y));
 
         // center of mass method
-        if (tpf.closest.getState()){
+        if (tpf.useClosestTracking){
             targethistory[countslice - 1][1] = cursorpoint.x;
             targethistory[countslice - 1][2] = cursorpoint.y;
             // also change current slice's data...
@@ -578,13 +578,13 @@ class Tracker extends Thread {
         leftroi = new Roi(0, 0, width / 2, height);
         Roi rightroi;
         rightroi = new Roi(width / 2, 0, width / 2, height);
-        if (roi != null && !tpf.right.getState()) {
+        if (roi != null && !tpf.useRightSideScreenTracking) {
             IJ.log(roi.getClass().getName());
             Rectangle r = roi.getBounds();
             roiwidth = r.width;
             roiheight = r.height;
         } else {
-            if (!tpf.right.getState()) {
+            if (!tpf.useRightSideScreenTracking) {
                 // set roi at left half.
                 IJ.log("startAcq: no roi! set roi = left half");
                 roi = (Roi) leftroi.clone();
@@ -617,7 +617,7 @@ class Tracker extends Thread {
                 imp.setRoi(leftroi);
                 ImageProcessor ipleft = ip.crop();
                 ImagePlus impleft = new ImagePlus("l", ipleft);
-                String thresholdmethod = tpf.thresholdmethod.getSelectedItem();
+                String thresholdmethod = tpf.detectionAlgorithm;
                 measures = getObjmeasures(impleft, ipleft, true, thresholdmethod);
 
                 // if lost any cells
@@ -737,7 +737,7 @@ class Tracker extends Thread {
             double yv = 0;
             String ans = "";
             int i = 0;
-            int skip = Integer.parseInt(tpf.skiptext.getText());// if it 2, keep 1 out of 2 image
+            int skip = tpf.skipFrame; // if it 2, keep 1 out of 2 image
             // int interval= Integer.parseInt(tpf.intervaltext.getText());//msec. if it 0,
             // ignore.
             int skipcount = 0;
@@ -809,15 +809,15 @@ class Tracker extends Thread {
                             }
                         } // if(!ready) end
 
-                        if (!tpf.manualtracking.getState()) {
-                            if (!tpf.CoM.getState() && !tpf.FULL.getState())// for normal thresholding method.
+                        if (!tpf.useManualTracking) {
+                            if (!tpf.useCenterOfMassTracking && !tpf.useFullFieldImaging)// for normal thresholding method.
                             {
 
                                 imp.setRoi(roi);
                                 ImageProcessor ip_current = imp.getProcessor();
                                 ImageProcessor ipleft = ip_current.crop();
                                 ImagePlus impleft = new ImagePlus("l", ipleft);
-                                String thresholdmethod = tpf.thresholdmethod.getSelectedItem();
+                                String thresholdmethod = tpf.detectionAlgorithm;
                                 measures = getObjmeasures(impleft, ipleft, false, thresholdmethod);
                                 if (measures.length == 0)// if lost any cells
                                 {
@@ -865,7 +865,7 @@ class Tracker extends Thread {
 
                                 // return [roi#][order by distance from target, distance, dx, dy]
                                 // static double[][] getRoiOrder(int targetroinum, double[][] measures)
-                                if (!tpf.closest.getState()) {
+                                if (!tpf.useClosestTracking) {
                                     IJ.log("startAcq: before getRoiOrder " + String.valueOf(targethistory[i][0]));
                                     roiorder = getRoiOrder((int) targethistory[i][0], measures);
                                     // check target is collect or not by direcion/distance towards next roi. if
@@ -913,14 +913,14 @@ class Tracker extends Thread {
                                 } // if(measures.length>2) end
                                   //
                                   // here put stage control code.
-                            } else if (tpf.FULL.getState())// full field
+                            } else if (tpf.useFullFieldImaging)// full field
                             {
                                 roi = new Roi(4, 4, width - 8, height - 8);// trim edge of image since it may have dark
                                                                            // reagion
                                 imp.setRoi(roi);
                                 ImagePlus inverted = imp.duplicate();
                                 ImageProcessor ip_current = inverted.getProcessor();
-                                if (tpf.BF.getState())// for brightfield
+                                if (tpf.useBrightFieldImaging)// for brightfield
                                 {
                                     ip_current.invert(); // turn this off for now because it causes flashing
                                 }
@@ -1007,18 +1007,7 @@ class Tracker extends Thread {
                                 xv = Math.round(-distancefromcenter[0] * 0.0018 * 1000.0) / 1000.0;
                                 yv = Math.round(distancefromcenter[1] * 0.0018 * 1000.0) / 1000.0;
                                 // 10x obj, need to be increased...may be x4?
-                                int accelint = 1;
-                                if (tpf.acceleration.getSelectedItem() == "1x") {
-                                    accelint = 1;
-                                } else if (tpf.acceleration.getSelectedItem() == "2x") {
-                                    accelint = 2;
-                                } else if (tpf.acceleration.getSelectedItem() == "4x") {
-                                    accelint = 4;
-                                } else if (tpf.acceleration.getSelectedItem() == "5x") {
-                                    accelint = 5;
-                                } else if (tpf.acceleration.getSelectedItem() == "6x") {
-                                    accelint = 6;
-                                }
+                                int accelint = tpf.stageAccelerationFactor;
                                 xv = xv * accelint;
                                 yv = yv * accelint;
                                 IJ.log("startAcq: xv is " + String.valueOf(xv));
@@ -1115,7 +1104,7 @@ class Tracker extends Thread {
             IJ.log("startAcq: finished image acquisition at" + d2.getTime());
             IJ.log(String.valueOf((d2.getTime() - d1.getTime()) / 1000.0) + " sec");
             if (!ready) {
-                if (tpf.textpos.getState()) {
+                if (tpf.saveXYPositionsAsTextFile) {
                     outputData(xposarray, yposarray);
                 }
             }
