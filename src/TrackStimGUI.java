@@ -1,7 +1,10 @@
-/**
- *
- * @author zhenlabmini
- */
+import ij.io.DirectoryChooser;
+
+import java.io.File;
+
+import javax.swing.JOptionPane;
+
+
 class TrackStimGUI extends javax.swing.JFrame {
 
     public TrackStimController tsc;
@@ -17,6 +20,10 @@ class TrackStimGUI extends javax.swing.JFrame {
 
     // set initial state in the ui from the state in the controller
     void setInitialState(){
+
+        // save directory text should only change when someone clicks a directory
+        saveDirectoryText.setEditable(false);
+
         // set camera state
         numFramesText.setText(String.valueOf(tsc.numFrames));
         skipFrameText.setText(String.valueOf(tsc.skipFrame));
@@ -38,7 +45,7 @@ class TrackStimGUI extends javax.swing.JFrame {
         enableStimulatorBtn.setSelected(false);
         preStimulationDurationMsText.setText(String.valueOf(tsc.preStimulationTimeMs));
         stimulationDurationMsText.setText(String.valueOf(tsc.stimulationDurationMs));
-        stimulationStrengthText.setText(String.valueOf(tsc.strength));
+        stimulationStrengthText.setText(String.valueOf(tsc.stimulationStrength));
         stimulationCycleLengthText.setText(String.valueOf(tsc.stimulationCycleLengthMs));
         numStimulationCyclesText.setText(String.valueOf(tsc.numStimulationCycles));
         enableRampStimulationBtn.setSelected(false);
@@ -47,7 +54,374 @@ class TrackStimGUI extends javax.swing.JFrame {
         rampEndText.setText(String.valueOf(tsc.rampEnd));
 
         saveDirectoryText.setText(tsc.savePath);
+
+
+        // validation logic to validate text fields whenever they have changed
+        final TrackStimGUI g = this;
+        numFramesText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+
+            public void validate() {
+                int[] result = validateNumberInput(numFramesText.getText(), Integer.valueOf(0), null);
+                boolean isValid = result[0] != 0;
+                int parsedValue = result[1];
+
+                if(isValid){
+                    tsc.numFrames = parsedValue;
+                }
+            }
+        });
+
+        skipFrameText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+
+            public void validate() {
+                int[] result = validateNumberInput(skipFrameText.getText(), Integer.valueOf(0), null);
+                boolean isValid = result[0] != 0;
+                int parsedValue = result[1];
+
+                if(isValid){
+                    tsc.skipFrame = parsedValue;
+                }
+            }
+        });
+           
+        preStimulationDurationMsText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+
+            public void validate() {
+                int[] result = validateNumberInput(preStimulationDurationMsText.getText(), Integer.valueOf(0), null);
+                boolean isValid = result[0] != 0;
+                int parsedValue = result[1];
+
+                if(isValid){
+                    tsc.preStimulationTimeMs = parsedValue;
+                }
+            }
+        });
+
+        rampBaseText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+
+            public void validate() {
+                int[] result = validateNumberInput(rampBaseText.getText(), Integer.valueOf(0), null);
+                boolean isValid = result[0] != 0;
+                int parsedValue = result[1];
+
+                if(isValid){
+                    tsc.rampBase = parsedValue;
+                }
+            }
+        });
+
+        stimulationDurationMsText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+
+            public void validate() {
+                int[] result = validateNumberInput(stimulationDurationMsText.getText(), Integer.valueOf(0), null);
+                boolean isValid = result[0] != 0;
+                int parsedValue = result[1];
+
+                if(isValid){
+                    tsc.stimulationDurationMs = parsedValue;
+                }
+            }
+        });
+
+        stimulationStrengthText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+
+            public void validate() {
+                int[] result = validateNumberInput(stimulationStrengthText.getText(), Integer.valueOf(0), null);
+                boolean isValid = result[0] != 0;
+                int parsedValue = result[1];
+
+                if(isValid){
+                    tsc.stimulationStrength = parsedValue;
+                }
+            }
+        });
+
+
+        stimulationCycleLengthText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+
+            public void validate() {
+                int[] result = validateNumberInput(stimulationCycleLengthText.getText(), Integer.valueOf(0), null);
+                boolean isValid = result[0] != 0;
+                int parsedValue = result[1];
+
+                if(isValid){
+                    tsc.stimulationCycleLengthMs = parsedValue;
+                }
+            }
+        });
+
+        numStimulationCyclesText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+
+            public void validate() {
+                int[] result = validateNumberInput(numStimulationCyclesText.getText(), Integer.valueOf(0), null);
+                boolean isValid = result[0] != 0;
+                int parsedValue = result[1];
+
+                if(isValid){
+                    tsc.numStimulationCycles = parsedValue;
+                }
+            }
+        });
+
+        rampStartText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+
+            public void validate() {
+                int[] result = validateNumberInput(rampStartText.getText(), Integer.valueOf(0), null);
+                boolean isValid = result[0] != 0;
+                int parsedValue = result[1];
+
+                if(isValid){
+                    tsc.rampStart = parsedValue;
+                }
+            }
+        });
+
+        rampEndText.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+              public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validate();
+            }
+
+            public void validate() {
+                int[] result = validateNumberInput(rampEndText.getText(), Integer.valueOf(0), null);
+                boolean isValid = result[0] != 0;
+                int parsedValue = result[1];
+
+                if(isValid){
+                    tsc.rampEnd = parsedValue;
+                }
+            }
+        });
     }
+    // first element of int[] is whether the input is valid, second is the parsed int
+    int[] validateNumberInput(String input, Integer min, Integer max){
+        int valid = 1;
+        int parsed = 0;
+        int[] validParsed = new int[]{ 0, 0};
+        try {
+            parsed = Integer.parseInt(input);
+
+            if( min != null && parsed < min ){
+                valid = 0;
+            }
+
+            if (max != null && parsed > max ){
+                valid = 0;
+            }
+        } catch(java.lang.Exception e){
+            return validParsed;
+        }
+
+        validParsed[0] = valid;
+        validParsed[1] = parsed;
+
+        return validParsed;
+    }
+
+    boolean pathIsValidDirectory(String path){
+        File f = new File(path);
+
+        boolean valid = true;
+        if(!f.exists()){
+            valid = false;
+        }
+
+        if(!f.isDirectory()){
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    
+    private void readyBtnActionPerformed(java.awt.event.ActionEvent evt) {                                         
+        // TODO add your handling code here:
+        tsc.handleReadyBtnPress();
+    }                                        
+
+    private void goBtnActionPerformed(java.awt.event.ActionEvent evt) {                                      
+        // TODO add your handling code here:
+        if( pathIsValidDirectory(saveDirectoryText.getText()) ){
+            tsc.handleGoBtnPress();
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(this, "please choose a directory to save the images to");
+        }
+    }                                     
+
+    private void stopBtnActionPerformed(java.awt.event.ActionEvent evt) {                                        
+        // TODO add your handling code here:
+        tsc.handleStopBtnPress();
+    }                                       
+
+    private void changeDirectoryBtnActionPerformed(java.awt.event.ActionEvent evt) {                                                   
+        // TODO add your handling code here:
+        DirectoryChooser dc = new DirectoryChooser("Directory for temp folder");
+        String directoryPath = dc.getDirectory();
+        saveDirectoryText.setText(directoryPath);
+    }                                                  
+
+    private void manualTrackingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {
+
+        tsc.useManualTracking = manualTrackingCheckbox.isSelected();
+    }                                                      
+
+    private void centerOfMassTrackingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                             
+        tsc.useCenterOfMassTracking = centerOfMassTrackingCheckbox.isSelected();
+    }                                                                                                                                       
+
+    private void cameraExposureSelectorActionPerformed(java.awt.event.ActionEvent evt) {                                    tsc.cameraExposureMsIndex = cameraExposureSelector.getSelectedIndex();                        
+    }                                                      
+
+    private void cameraCycleLengthSelectorActionPerformed(java.awt.event.ActionEvent evt) {                                                          
+        tsc.cameraCycleLengthMsIndex = cameraCycleLengthSelector.getSelectedIndex(); 
+    }                                                         
+
+    private void useClosestTrackingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                           
+        tsc.useClosestTracking = useClosestTrackingCheckbox.isSelected();
+    }                                                          
+
+    private void useRightCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                 
+        tsc.useRightSideScreenTracking = useRightCheckbox.isSelected();
+    }                                                
+
+    private void useFullfieldCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                     
+        tsc.useFullFieldImaging = useFullfieldCheckbox.isSelected();
+    }                                                    
+
+    private void useBrightFieldCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                       
+        tsc.useBrightFieldImaging = useBrightFieldCheckbox.isSelected();
+    }                                                      
+
+    private void stageAccelerationSelectorActionPerformed(java.awt.event.ActionEvent evt) {                                                          
+        tsc.stageAccelerationFactor = stageAccelerationSelector.getSelectedIndex();
+    }                                                         
+
+    private void detectionAlgorithmSelectorActionPerformed(java.awt.event.ActionEvent evt) {                                                           
+        tsc.detectionAlgorithm = (String) detectionAlgorithmSelector.getSelectedItem();
+    }                                                          
+
+    private void saveXYPositionsAsTextCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                              
+        tsc.saveXYPositionsAsTextFile = saveXYPositionsAsTextCheckbox.isSelected();
+    }                                                             
+
+    private void enableStimulatorBtnActionPerformed(java.awt.event.ActionEvent evt) {                                   
+        tsc.enableStimulator = enableStimulatorBtn.isSelected();  
+    }                                                   
+
+    private void testStimulationBtnActionPerformed(java.awt.event.ActionEvent evt) {                                   
+
+        // tsc needs to ensure that stimulation is not already running
+        tsc.runStimulation();
+    }                                                                                                   
+
+    private void enableRampStimulationBtnActionPerformed(java.awt.event.ActionEvent evt) {                                                         
+        // TODO add your handling code here:
+        tsc.useRamp = enableRampStimulationBtn.isSelected();  
+
+    }                                                        
+
+    private void rampStartTextActionPerformed(java.awt.event.ActionEvent evt) {                                              
+        // TODO add your handling code here:
+        int[] result = validateNumberInput(rampStartText.getText(), Integer.valueOf(0), null);
+
+        if(result[0] != 0){
+            tsc.rampStart = result[1];
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(this, "ramp start is invalid");
+            rampStartText.setText(String.valueOf(tsc.rampStart));
+        }       
+    }                                                                   
+
+    private void saveDirectoryTextActionPerformed(java.awt.event.ActionEvent evt) {                                                  
+        // TODO add your handling code here:
+    }             
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -156,22 +530,12 @@ class TrackStimGUI extends javax.swing.JFrame {
 
         numFramesText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         numFramesText.setText("3000");
-        numFramesText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                numFramesTextActionPerformed(evt);
-            }
-        });
 
         jLabel4.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         jLabel4.setText("Keep 1 of");
 
         skipFrameText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         skipFrameText.setText("1");
-        skipFrameText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                skipFrameTextActionPerformed(evt);
-            }
-        });
 
         jLabel5.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         jLabel5.setText("frame(s)");
@@ -180,7 +544,7 @@ class TrackStimGUI extends javax.swing.JFrame {
         jLabel6.setText("Exposure (ms)");
 
         cameraExposureSelector.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
-        cameraExposureSelector.setModel(new javax.swing.DefaultComboBoxModel<String>(new String[] { "0", "1", "10", "50", "100", "200", "500", "1000", " " }));
+        cameraExposureSelector.setModel(new javax.swing.DefaultComboBoxModel<String>(new String[] { "0", "1", "10", "50", "100", "200", "500", "1000" }));
         cameraExposureSelector.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cameraExposureSelectorActionPerformed(evt);
@@ -285,49 +649,24 @@ class TrackStimGUI extends javax.swing.JFrame {
 
         preStimulationDurationMsText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         preStimulationDurationMsText.setText("3000");
-        preStimulationDurationMsText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                preStimulationDurationMsTextActionPerformed(evt);
-            }
-        });
 
         stimulationDurationMsText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         stimulationDurationMsText.setText("1000");
-        stimulationDurationMsText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                stimulationDurationMsTextActionPerformed(evt);
-            }
-        });
 
         stimulationStrengthText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         stimulationStrengthText.setText("63");
-        stimulationStrengthText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                stimulationStrengthTextActionPerformed(evt);
-            }
-        });
 
         jLabel15.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         jLabel15.setText("Cycle length (ms)");
 
         stimulationCycleLengthText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         stimulationCycleLengthText.setText("5000");
-        stimulationCycleLengthText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                stimulationCycleLengthTextActionPerformed(evt);
-            }
-        });
 
         jLabel16.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         jLabel16.setText("Number of cycles");
 
         numStimulationCyclesText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         numStimulationCyclesText.setText("10");
-        numStimulationCyclesText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                numStimulationCyclesTextActionPerformed(evt);
-            }
-        });
 
         enableRampStimulationBtn.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         enableRampStimulationBtn.setText("Enable ramp");
@@ -339,11 +678,6 @@ class TrackStimGUI extends javax.swing.JFrame {
 
         rampBaseText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         rampBaseText.setText("0");
-        rampBaseText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                rampBaseTextActionPerformed(evt);
-            }
-        });
 
         jLabel17.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         jLabel17.setText("Ramp base");
@@ -364,11 +698,6 @@ class TrackStimGUI extends javax.swing.JFrame {
 
         rampEndText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         rampEndText.setText("63");
-        rampEndText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                rampEndTextActionPerformed(evt);
-            }
-        });
 
         saveXYPositionsAsTextCheckbox.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         saveXYPositionsAsTextCheckbox.setText("Save XY positions as a text file");
@@ -616,124 +945,8 @@ class TrackStimGUI extends javax.swing.JFrame {
         );
 
         pack();
-    }// </editor-fold>                        
-
-    private void readyBtnActionPerformed(java.awt.event.ActionEvent evt) {                                         
-        // TODO add your handling code here:
-    }                                        
-
-    private void goBtnActionPerformed(java.awt.event.ActionEvent evt) {                                      
-        // TODO add your handling code here:
-    }                                     
-
-    private void stopBtnActionPerformed(java.awt.event.ActionEvent evt) {                                        
-        // TODO add your handling code here:
-    }                                       
-
-    private void changeDirectoryBtnActionPerformed(java.awt.event.ActionEvent evt) {                                                   
-        // TODO add your handling code here:
-    }                                                  
-
-    private void numFramesTextActionPerformed(java.awt.event.ActionEvent evt) {                                              
-        // TODO add your handling code here:
-    }                                             
-
-    private void skipFrameTextActionPerformed(java.awt.event.ActionEvent evt) {                                              
-        // TODO add your handling code here:
-    }                                             
-
-    private void manualTrackingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                       
-        // TODO add your handling code here:
-    }                                                      
-
-    private void centerOfMassTrackingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                             
-        // TODO add your handling code here:
-    }                                                            
-
-    private void preStimulationDurationMsTextActionPerformed(java.awt.event.ActionEvent evt) {                                                             
-        // TODO add your handling code here:
-    }                                                            
-
-    private void rampBaseTextActionPerformed(java.awt.event.ActionEvent evt) {                                             
-        // TODO add your handling code here:
-    }                                            
-
-    private void cameraExposureSelectorActionPerformed(java.awt.event.ActionEvent evt) {                                                       
-        // TODO add your handling code here:
-    }                                                      
-
-    private void cameraCycleLengthSelectorActionPerformed(java.awt.event.ActionEvent evt) {                                                          
-        // TODO add your handling code here:
-    }                                                         
-
-    private void useClosestTrackingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                           
-        // TODO add your handling code here:
-    }                                                          
-
-    private void useRightCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                 
-        // TODO add your handling code here:
-    }                                                
-
-    private void useFullfieldCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                     
-        // TODO add your handling code here:
-    }                                                    
-
-    private void useBrightFieldCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                       
-        // TODO add your handling code here:
-    }                                                      
-
-    private void stageAccelerationSelectorActionPerformed(java.awt.event.ActionEvent evt) {                                                          
-        // TODO add your handling code here:
-    }                                                         
-
-    private void detectionAlgorithmSelectorActionPerformed(java.awt.event.ActionEvent evt) {                                                           
-        // TODO add your handling code here:
-    }                                                          
-
-    private void saveXYPositionsAsTextCheckboxActionPerformed(java.awt.event.ActionEvent evt) {                                                              
-        // TODO add your handling code here:
-    }                                                             
-
-    private void enableStimulatorBtnActionPerformed(java.awt.event.ActionEvent evt) {                                                    
-        // TODO add your handling code here:
-    }                                                   
-
-    private void testStimulationBtnActionPerformed(java.awt.event.ActionEvent evt) {                                                   
-        // TODO add your handling code here:
-    }                                                  
-
-    private void stimulationDurationMsTextActionPerformed(java.awt.event.ActionEvent evt) {                                                          
-        // TODO add your handling code here:
-    }                                                         
-
-    private void stimulationStrengthTextActionPerformed(java.awt.event.ActionEvent evt) {                                                        
-        // TODO add your handling code here:
-    }                                                       
-
-    private void stimulationCycleLengthTextActionPerformed(java.awt.event.ActionEvent evt) {                                                           
-        // TODO add your handling code here:
-    }                                                          
-
-    private void numStimulationCyclesTextActionPerformed(java.awt.event.ActionEvent evt) {                                                         
-        // TODO add your handling code here:
-    }                                                        
-
-    private void enableRampStimulationBtnActionPerformed(java.awt.event.ActionEvent evt) {                                                         
-        // TODO add your handling code here:
-    }                                                        
-
-    private void rampStartTextActionPerformed(java.awt.event.ActionEvent evt) {                                              
-        // TODO add your handling code here:
-    }                                             
-
-    private void rampEndTextActionPerformed(java.awt.event.ActionEvent evt) {                                            
-        // TODO add your handling code here:
-    }                                           
-
-    private void saveDirectoryTextActionPerformed(java.awt.event.ActionEvent evt) {                                                  
-        // TODO add your handling code here:
-    }                      
-                               
+    }// </editor-fold>  
+                                      
     // Variables declaration - do not modify                     
     private javax.swing.JComboBox<String> cameraCycleLengthSelector;
     private javax.swing.JComboBox<String> cameraExposureSelector;

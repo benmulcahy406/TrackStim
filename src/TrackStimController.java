@@ -59,7 +59,7 @@ class TrackStimController extends PlugInFrame implements ImageListener, MouseLis
     boolean enableStimulator = false;
     int preStimulationTimeMs = 5000;
     int stimulationDurationMs = 1000;
-    int strength = 63;
+    int stimulationStrength = 63;
     int stimulationCycleLengthMs = 5000;
     int numStimulationCycles = 5;
     boolean useRamp = false;
@@ -78,6 +78,22 @@ class TrackStimController extends PlugInFrame implements ImageListener, MouseLis
     // Tracker/Stimulator objects
     Tracker tracker;
     Stimulator stimulator;
+
+    public void runStimulation(){
+        // stimulator.runStimulation();
+    }
+
+    public void handleReadyBtnPress(){
+
+    }
+
+    public void handleStopBtnPress(){
+
+    }
+
+    public void handleGoBtnPress(){
+        
+    }
 
     public TrackStimController(CMMCore mmc_){
         super("TrackStim");
