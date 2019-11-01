@@ -52,7 +52,6 @@ class TrackStimController extends PlugInFrame implements ImageListener, MouseLis
     boolean useFullFieldImaging = false;
     boolean useBrightFieldImaging = false;
     boolean saveXYPositionsAsTextFile = false;
-
     int stageAccelerationFactor = 1;
     String detectionAlgorithm = "Yen";
 
