@@ -443,8 +443,8 @@ class TrackStimGUI extends javax.swing.JFrame {
         skipFrameText = new javax.swing.JTextField();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
-        cameraExposureSelector = new javax.swing.JComboBox<String>();
-        cameraCycleLengthSelector = new javax.swing.JComboBox<String>();
+        cameraExposureSelector = new javax.swing.JComboBox();
+        cameraCycleLengthSelector = new javax.swing.JComboBox();
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         manualTrackingCheckbox = new javax.swing.JCheckBox();
@@ -452,9 +452,9 @@ class TrackStimGUI extends javax.swing.JFrame {
         centerOfMassTrackingCheckbox = new javax.swing.JCheckBox();
         useBrightFieldCheckbox = new javax.swing.JCheckBox();
         jLabel9 = new javax.swing.JLabel();
-        stageAccelerationSelector = new javax.swing.JComboBox<String>();
+        stageAccelerationSelector = new javax.swing.JComboBox();
         jLabel10 = new javax.swing.JLabel();
-        detectionAlgorithmSelector = new javax.swing.JComboBox<String>();
+        detectionAlgorithmSelector = new javax.swing.JComboBox();
         jLabel11 = new javax.swing.JLabel();
         testStimulationBtn = new javax.swing.JButton();
         enableStimulatorBtn = new javax.swing.JToggleButton();
@@ -544,7 +544,7 @@ class TrackStimGUI extends javax.swing.JFrame {
         jLabel6.setText("Exposure (ms)");
 
         cameraExposureSelector.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
-        cameraExposureSelector.setModel(new javax.swing.DefaultComboBoxModel<String>(new String[] { "0", "1", "10", "50", "100", "200", "500", "1000" }));
+        cameraExposureSelector.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "0", "1", "10", "50", "100", "200", "500", "1000" }));
         cameraExposureSelector.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cameraExposureSelectorActionPerformed(evt);
@@ -552,7 +552,7 @@ class TrackStimGUI extends javax.swing.JFrame {
         });
 
         cameraCycleLengthSelector.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
-        cameraCycleLengthSelector.setModel(new javax.swing.DefaultComboBoxModel<String>(new String[] { "0", "50", "100", "200", "500", "1000", "2000" }));
+        cameraCycleLengthSelector.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "0", "50", "100", "200", "500", "1000", "2000" }));
         cameraCycleLengthSelector.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cameraCycleLengthSelectorActionPerformed(evt);
@@ -601,7 +601,7 @@ class TrackStimGUI extends javax.swing.JFrame {
         jLabel9.setText("Stage acceleration ");
 
         stageAccelerationSelector.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
-        stageAccelerationSelector.setModel(new javax.swing.DefaultComboBoxModel<String>(new String[] { "1x", "2x", "4x", "5x", "6x" }));
+        stageAccelerationSelector.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "1x", "2x", "4x", "5x", "6x" }));
         stageAccelerationSelector.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 stageAccelerationSelectorActionPerformed(evt);
@@ -612,7 +612,7 @@ class TrackStimGUI extends javax.swing.JFrame {
         jLabel10.setText("Detection algorithm");
 
         detectionAlgorithmSelector.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
-        detectionAlgorithmSelector.setModel(new javax.swing.DefaultComboBoxModel<String>(new String[] { "Yen", "Triangle", "Otsu", "Default", "Huang", "Intermodes", "IsoData", "Li", "MaxEntropy", "Mean", "MinError(I)", "Minimum", "Moments", "Percentile", "RenyiEntropy", "Shanbhag" }));
+        detectionAlgorithmSelector.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Yen", "Triangle", "Otsu", "Default", "Huang", "Intermodes", "IsoData", "Li", "MaxEntropy", "Mean", "MinError(I)", "Minimum", "Moments", "Percentile", "RenyiEntropy", "Shanbhag" }));
         detectionAlgorithmSelector.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 detectionAlgorithmSelectorActionPerformed(evt);
@@ -948,11 +948,11 @@ class TrackStimGUI extends javax.swing.JFrame {
     }// </editor-fold>  
                                       
     // Variables declaration - do not modify                     
-    private javax.swing.JComboBox<String> cameraCycleLengthSelector;
-    private javax.swing.JComboBox<String> cameraExposureSelector;
+    private javax.swing.JComboBox cameraCycleLengthSelector;
+    private javax.swing.JComboBox cameraExposureSelector;
     private javax.swing.JCheckBox centerOfMassTrackingCheckbox;
     private javax.swing.JButton changeDirectoryBtn;
-    private javax.swing.JComboBox<String> detectionAlgorithmSelector;
+    private javax.swing.JComboBox detectionAlgorithmSelector;
     private javax.swing.JToggleButton enableRampStimulationBtn;
     private javax.swing.JToggleButton enableStimulatorBtn;
     private javax.swing.JButton goBtn;
@@ -987,7 +987,7 @@ class TrackStimGUI extends javax.swing.JFrame {
     private javax.swing.JTextField saveDirectoryText;
     private javax.swing.JCheckBox saveXYPositionsAsTextCheckbox;
     private javax.swing.JTextField skipFrameText;
-    private javax.swing.JComboBox<String> stageAccelerationSelector;
+    private javax.swing.JComboBox stageAccelerationSelector;
     private javax.swing.JTextField stimulationCycleLengthText;
     private javax.swing.JTextField stimulationDurationMsText;
     private javax.swing.JTextField stimulationStrengthText;
