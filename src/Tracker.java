@@ -90,6 +90,18 @@ class Tracker extends Thread {
 
     public void run() {
         IJ.log("Tracker: run start");
+
+        // ensure mmc is not running a sequence acquisition already
+        if (mmc_.isSequenceRunning()) {
+            try {
+                IJ.log("startAcq: previous acquisition running, trying stopSequenceAcquisition");
+                mmc_.stopSequenceAcquisition(); // need to be catched
+            } catch (java.lang.Exception e) {
+                IJ.log("startAcq: error trying to stop sequence acquisition");
+                IJ.log(e.getMessage());
+            }
+        }
+
         this.startAcq("from thread");
     }
 
@@ -149,7 +161,7 @@ class Tracker extends Thread {
     }
 
     // look for stage serial port name to send command
-    private String getStagePortLabel(String stagelabel) {
+    private String getStagePortLabel() {
         String stageDeviceLabel = mmc_.getXYStageDevice();
         String port = "";
         try {
@@ -469,36 +481,44 @@ class Tracker extends Thread {
         return returnvalue;
     }
 
-    void drawRoiOrder(int slice, double[][] roiorder, double[][] measures_, boolean trackstatus) {
+    // not entirely sure what this does, but I suspect that this is related to drawing
+    // an overlay over the images
+    // in particular, I think it draws boxes representing regions of intrest in a specific order
+    void drawRoiOrder(int slice, double[][] roiOrder, double[][] measures_, boolean trackStatus) {
         ImageProcessor drawip = binaryimgstack.getProcessor(slice);
-        for (int j = 0; j < roiorder.length; j++) {
-            String order = String.valueOf((int) roiorder[j][0]);
+
+        for (int j = 0; j < roiOrder.length; j++) {
+            String order = String.valueOf((int) roiOrder[j][0]);
             IJ.log(order + " slice " + String.valueOf(slice));
+
             drawip.moveTo((int) measures_[j][2], (int) measures_[j][3]);
-            if (trackstatus == true) {
+            
+            if (trackStatus == true) {
                 drawip.setValue(200);
             } else {
                 drawip.setValue(100);
             }
+            
             drawip.drawString(order);
         }
     }
 
     // Save x and y position to .txt file.
-    void outputData(double[] xposarray, double[] yposarray) {
-        String strforsave;
+    void saveXYPositionsToTextFile(double[] xPositionsToSave, double[] yPositionsToSave) {
+        String saveString;
         String header = "x,y";
-        String BR = System.getProperty("line.separator");
-        strforsave = header + BR;
+        String lineSeperator = System.getProperty("line.separator");
+        saveString = header + lineSeperator;
         // actual data
-        String aslicestring = "";
-        for (int i = 0; i < xposarray.length; i++) {
-            aslicestring = String.valueOf(xposarray[i]) + "," + String.valueOf(yposarray[i]);
-            strforsave = strforsave + aslicestring + BR;
+
+        String currPositionData = "";
+        for (int i = 0; i < xPositionsToSave.length; i++) {
+            currPositionData = String.valueOf(xPositionsToSave[i]) + "," + String.valueOf(yPositionsToSave[i]);
+            saveString = saveString + currPositionData + lineSeperator;
         }
         // show dialog
-        IJ.saveString(strforsave, "");
-        IJ.log("outputData: Output is saved");
+        IJ.saveString(saveString, tpf.imageSaveDirectory);
+        IJ.log("saveXYPositionsToTextFile: Output is saved");
     }
 
     // for non-thresholding method
@@ -507,22 +527,32 @@ class Tracker extends Thread {
         ImagePlus imp_ = imp;
         ImageProcessor ip_ = ip;
         Roi roi_ = roi;
-        ImageStatistics imstat_ = imp_.getStatistics(2);
-        int backgroundvalue = (int) imstat_.mean;
+
+        // get the mean pixel value for the background
+        ImageStatistics imstat_ = imp_.getStatistics(ij.measure.Measurements.MEAN); // 2 -> ij.measure.Measurements.MEAN
+        int bgValue = (int) imstat_.mean;
+
+        // duplicate imageprocessor and subtract the mean pixel value for each pixel
         ImageProcessor ip2 = ip_.duplicate();
-        ip2.add(-backgroundvalue * 1.5);
+        ip2.add(-bgValue * 1.5);
         ImagePlus imp2 = new ImagePlus("subtracted", ip2);
+
         roi_.setLocation(x, y);
         imp2.setRoi(roi_);
 
-        // median filter ver 7 test
+        // eliminate noise that interferes with thresholding
         RankFilters rf = new RankFilters();
-        rf.rank(ip2, 0.0, 4);// median 4 periodic black white noize cause miss thresholding, so eliminate
-                             // those noize
-        ImageStatistics imstat2 = imp2.getStatistics(64 + 32);
-        double[] returnval = { imstat2.xCenterOfMass, imstat2.yCenterOfMass };
+        rf.rank(ip2, 0.0, ij.plugin.filter.RankFilters.MEDIAN);
+
+
+        // get center of mass
+        ImageStatistics imstat2 = imp2.getStatistics(ij.measure.Measurements.CENTER_OF_MASS + ij.measure.Measurements.CENTROID);
+        double[] centerOfMass = { imstat2.xCenterOfMass, imstat2.yCenterOfMass };
+
+        // increment global variable
         countslice++;
-        return (returnval);
+
+        return centerOfMass;
     }
 
     /*---------------------------------------  start process-------------------------------------------------*/
@@ -539,20 +569,12 @@ class Tracker extends Thread {
         threshsum = 0;
         threahaverage = 0;
 
-        if (mmc_.isSequenceRunning()) {
-            try {
-                IJ.log("startAcq: previous acquisition running, trying stopSequenceAcquisition");
-                mmc_.stopSequenceAcquisition(); // need to be catched
-            } catch (java.lang.Exception e) {
-                IJ.log("startAcq: error trying to stop sequence acquisition");
-                IJ.log(e.getMessage());
-            }
-        }
         String stagelabel = mmc_.getXYStageDevice();
         String zstagelabel = mmc_.getFocusDevice();
         IJ.log("startAcq: stagelabel is " + stagelabel);
         IJ.log("startAcq: zstagelabel is " + zstagelabel);
         double zpos = 0;
+
         try {
             zpos = mmc_.getPosition(zstagelabel);
         } catch (java.lang.Exception e) {
@@ -560,16 +582,9 @@ class Tracker extends Thread {
             IJ.log(e.getMessage());
         }
         IJ.log("startAcq: zpos is " + String.valueOf(zpos));
-        double xpos = 0;
-        try {
-            xpos = mmc_.getXPosition(stagelabel);
-        } catch (java.lang.Exception e) {
-            IJ.log("startAcq: error getting x position from stage " + stagelabel);
-            IJ.log(e.getMessage());
-        }
-        IJ.log("startAcq: xpos is " + String.valueOf(xpos));
-        String PORT = getStagePortLabel(stagelabel);
-        // actually not null, "" will be returned.
+
+        String PORT = getStagePortLabel();
+
         if (PORT != "") {
             IJ.log("startAcq: PORT is " + PORT);
         } else {
@@ -589,23 +604,24 @@ class Tracker extends Thread {
         leftroi = new Roi(0, 0, width / 2, height);
         Roi rightroi;
         rightroi = new Roi(width / 2, 0, width / 2, height);
+
         if (roi != null && !tpf.trackRightSideScreen.getState()) {
-            IJ.log(roi.getClass().getName());
             Rectangle r = roi.getBounds();
             roiwidth = r.width;
             roiheight = r.height;
         } else {
             if (!tpf.trackRightSideScreen.getState()) {
                 // set roi at left half.
-                IJ.log("startAcq: no roi! set roi = left half");
+                IJ.log("startAcq: no existing roi, set roi to the left side of the screen");
                 roi = (Roi) leftroi.clone();
             } else {
                 // set roi at right half.
-                IJ.log("startAcq: no roi! set roi = right half");
+                IJ.log("startAcq: no existing roi, set roi to the right side of the screen");
                 roi = (Roi) rightroi.clone();
 
             }
         }
+
         ImageStatistics imstat = imp.getStatistics(16);
 
         // If there is stack, process it without stage control.
@@ -1096,38 +1112,26 @@ class Tracker extends Thread {
                 } // if (mmc.getRemainingImageCount() > 0) end
             } // while (mmc.isSequenceRunning()) end
 
+            // after image acquisition finished, set the xy velocity to 0
             try {
                 mmc_.setSerialPortCommand(PORT, "VECTOR X=0 Y=0", "\r");
-            } catch (java.lang.Exception e) {
-                IJ.log("startAcq: error setting serial port command to device at port " + PORT );
-                IJ.log(e.getMessage());
-            }
-            try {
                 ans = mmc_.getSerialPortAnswer(PORT, "\r\n");
-            } catch (java.lang.Exception e) {
-                IJ.log("startAcq: error getting serial port answer from device at port " + PORT );
-                IJ.log(e.getMessage());
-            }
-            // print(ans);
-            try {
+
                 mmc_.setSerialPortCommand(PORT, "VECTOR X? Y?", "\r");
-            } catch (java.lang.Exception e) {
-                IJ.log("startAcq: error setting serial port command to device at port " + PORT );
-                IJ.log(e.getMessage());
-            }
-            try {
                 ans = mmc_.getSerialPortAnswer(PORT, "\r\n");
             } catch (java.lang.Exception e) {
-                IJ.log("startAcq: error getting serial port answer from device at port " + PORT );
+                IJ.log("startAcq: error setting serial port command to device at port " + PORT );
                 IJ.log(e.getMessage());
             }
 
             Date d2 = new java.util.Date();
             IJ.log("startAcq: finished image acquisition at" + d2.getTime());
             IJ.log(String.valueOf((d2.getTime() - d1.getTime()) / 1000.0) + " sec");
+
+            // output saved data if user selected the option to
             if (!ready) {
                 if (tpf.saveXYPositionsAsTextFile.getState()) {
-                    outputData(xposarray, yposarray);
+                    saveXYPositionsToTextFile(xposarray, yposarray);
                 }
             }
 
