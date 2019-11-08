@@ -34,6 +34,70 @@ import ij.gui.ImageCanvas;
 
 import mmcorej.CMMCore;
 
+class XYStageController {
+    String xyStagePort;
+    String xyStageDeviceLabel;
+    String zStageDeviceLabel;
+
+    CMMCore core;
+
+    XYStageController(CMMCore core_){
+        core = core_;
+    }
+
+    boolean initialize(){
+        boolean initialized = false;
+
+        try {
+            xyStageDeviceLabel = core.getXYStageDevice();
+            zStageDeviceLabel = core.getFocusDevice();
+            xyStagePort = core.getProperty(xyStageDeviceLabel, "Port");
+            initialized = true;
+        } catch(java.lang.Exception e) {
+            IJ.log("could not get xy stage port");
+            IJ.log(e.getMessage());
+        }
+
+        IJ.log("xyStagePort is " + xyStagePort);
+        IJ.log("xyStageDeviceLabel is " + xyStageDeviceLabel);
+        IJ.log("zStageLabel is " + zStageDeviceLabel);
+        
+        return initialized;
+    }
+
+    // set XY stage velocity by sending a command using the serial port
+    void setXYStageVelocity(double xVelocity, double yVelocity){
+        String xyStageCommand = "VECTOR X=" + String.valueOf(xVelocity) + " Y=" + String.valueOf(yVelocity);
+        try {
+            core.setSerialPortCommand(xyStagePort, xyStageCommand, "\r");
+
+            String xyStageCommandAnswer = core.getSerialPortAnswer(xyStagePort, "\r\n");
+            IJ.log("setXYStageVelocity: response from xy stage is " + xyStageCommandAnswer);
+
+        } catch (java.lang.Exception e) {
+            IJ.log("setXYStageVelocity: error setting xy stage velocity " + xyStageCommand);
+            IJ.log(e.getMessage());
+        }
+    }
+
+    // get XY stage velocity by sending a command using the serial port
+    String getXYStageVelocity(double xVelocity, double yVelocity){
+        String xyStageCommand = "VECTOR X=? Y=?";
+        String xyStageVelocityAnswer = "";
+        try {
+            core.setSerialPortCommand(xyStagePort, xyStageCommand, "\r");
+
+            xyStageVelocityAnswer = core.getSerialPortAnswer(xyStagePort, "\r\n");
+            IJ.log("getXYStageVelocity: response from xy stage is " + xyStageVelocityAnswer);
+        } catch (java.lang.Exception e) {
+            IJ.log("getXYStageVelocity: error getting xy stage velocity " + xyStageCommand);
+            IJ.log(e.getMessage());
+        }
+
+        return xyStageVelocityAnswer;
+    }
+}
+
 
 class Tracker extends Thread {
     // vaiables recieve from GUI
@@ -44,6 +108,9 @@ class Tracker extends Thread {
     String imageSaveDirectory;
     int numFrames;
     boolean ready;
+
+    // XY Stage Controller
+    XYStageController xyStageController;
 
     // inside of thread
     static int countslice = 0;
@@ -85,6 +152,8 @@ class Tracker extends Thread {
         imageSaveDirectory = tpf.imageSaveDirectory;
         numFrames = tpf.numFrames;
         ready = tpf.ready;
+
+        xyStageController = new XYStageController(mmc_);
 
     }
 
@@ -541,36 +610,6 @@ class Tracker extends Thread {
         return centerOfMass;
     }
 
-    // look for stage serial port name to send command
-    String getXYStagePort() {
-        String stageDeviceLabel = mmc_.getXYStageDevice();
-        String port = "";
-        try {
-            port = mmc_.getProperty(stageDeviceLabel, "Port");
-        } catch(java.lang.Exception e) {
-            IJ.log("could not get xy stage port");
-            IJ.log(e.getMessage());
-        }
-        IJ.log("xyStagePort is " + port);
-        
-        return port;
-    }
-
-    // set XY stage velocity by sending a command using the serial port
-    void setXYStageVelocity(double xVelocity, double yVelocity, String xyStagePort){
-        String xyStageCommand = "VECTOR X=" + String.valueOf(xVelocity) + " Y=" + String.valueOf(yVelocity);
-        try {
-            mmc_.setSerialPortCommand(xyStagePort, xyStageCommand, "\r");
-
-            String xyStageCommandAnswer = mmc_.getSerialPortAnswer(xyStagePort, "\r\n");
-            IJ.log("setXYStageVelocity: response from setting xy velocity is " + xyStageCommandAnswer);
-
-        } catch (java.lang.Exception e) {
-            IJ.log("startAcq: error setting xy stage velocity " + xyStageCommand);
-            IJ.log(e.getMessage());
-        }
-    }
-
     // called in startAcq when there is an existing image stack to process
     void processExistingImageStack(ImagePlus imgPls){
         int width = imgPls.getWidth();
@@ -683,12 +722,13 @@ class Tracker extends Thread {
 
     //////////////////////////////////////////////////////////////////////////////////
     public void startAcq(String arg) {
-        String PORT = getXYStagePort();
         String stagelabel = mmc_.getXYStageDevice();
         String zstagelabel = mmc_.getFocusDevice();
+        boolean xyStageInitialized = xyStageController.initialize();
 
-        if( PORT == "" ){
+        if( !xyStageInitialized ){
             IJ.log("startAcq: XY stage port is not found, can't start image acquisition");
+            return;
         }
 
         // static values are last even after process. need to clear onece have done.
@@ -1069,9 +1109,9 @@ class Tracker extends Thread {
                             yv = yv * accelint;
                             IJ.log("startAcq: xv is " + String.valueOf(xv));
                             IJ.log("startAcq: yv is " + String.valueOf(yv));
-                            setXYStageVelocity(xv, yv, PORT);
+                            xyStageController.setXYStageVelocity(xv, yv);
                         } else {
-                            setXYStageVelocity(0.0, 0.0, PORT);
+                            xyStageController.setXYStageVelocity(0.0, 0.0);
                         } // if(distancescalar>LIMIT) else end
                     } // if manual tracking
                     measurespre = measures;
@@ -1083,7 +1123,7 @@ class Tracker extends Thread {
         } // while (mmc.isSequenceRunning()) end
 
         // after image acquisition finished, set the xy velocity to 0
-        setXYStageVelocity(0.0, 0.0, PORT);
+        xyStageController.setXYStageVelocity(0.0, 0.0);
 
         Date d2 = new java.util.Date();
         IJ.log("startAcq: finished image acquisition at" + d2.getTime());
