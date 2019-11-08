@@ -160,20 +160,6 @@ class Tracker extends Thread {
         }
     }
 
-    // look for stage serial port name to send command
-    private String getStagePortLabel() {
-        String stageDeviceLabel = mmc_.getXYStageDevice();
-        String port = "";
-        try {
-            port = mmc_.getProperty(stageDeviceLabel, "Port");
-        } catch(java.lang.Exception e) {
-            IJ.log("could not get xy stage port");
-            IJ.log(e.getMessage());
-        }
-        IJ.log("xyStagePort is " + port);
-        
-        return port;
-    }
 
     // second new method to track
     // make bynary image, watershed, detect objects above particular size
@@ -555,93 +541,58 @@ class Tracker extends Thread {
         return centerOfMass;
     }
 
-    /*---------------------------------------  start process-------------------------------------------------*/
-
-    //////////////////////////////////////////////////////////////////////////////////
-    public void startAcq(String arg) {
-        // static values are last even after process. need to clear onece have done.
-        countslice = 0;
-        binaryimgstack = null;
-        preroiarraylist = null;
-        predistance = 0.0;
-        pretheta = 10.0;// normal radian must beteween =-pi. so this value could use to check if there
-                        // is pretheta.
-        threshsum = 0;
-        threahaverage = 0;
-
-        String stagelabel = mmc_.getXYStageDevice();
-        String zstagelabel = mmc_.getFocusDevice();
-        IJ.log("startAcq: stagelabel is " + stagelabel);
-        IJ.log("startAcq: zstagelabel is " + zstagelabel);
-        double zpos = 0;
-
+    // look for stage serial port name to send command
+    String getXYStagePort() {
+        String stageDeviceLabel = mmc_.getXYStageDevice();
+        String port = "";
         try {
-            zpos = mmc_.getPosition(zstagelabel);
-        } catch (java.lang.Exception e) {
-            IJ.log("startAcq: error getting z position from zstage " + zstagelabel);
+            port = mmc_.getProperty(stageDeviceLabel, "Port");
+        } catch(java.lang.Exception e) {
+            IJ.log("could not get xy stage port");
             IJ.log(e.getMessage());
         }
-        IJ.log("startAcq: zpos is " + String.valueOf(zpos));
+        IJ.log("xyStagePort is " + port);
+        
+        return port;
+    }
 
-        String PORT = getStagePortLabel();
+    // set XY stage velocity by sending a command using the serial port
+    void setXYStageVelocity(double xVelocity, double yVelocity, String xyStagePort){
+        String xyStageCommand = "VECTOR X=" + String.valueOf(xVelocity) + " Y=" + String.valueOf(yVelocity);
+        try {
+            mmc_.setSerialPortCommand(xyStagePort, xyStageCommand, "\r");
 
-        if (PORT != "") {
-            IJ.log("startAcq: PORT is " + PORT);
-        } else {
-            IJ.log("startAcq: PORT is not found");
-            return;
+            String xyStageCommandAnswer = mmc_.getSerialPortAnswer(xyStagePort, "\r\n");
+            IJ.log("setXYStageVelocity: response from setting xy velocity is " + xyStageCommandAnswer);
+
+        } catch (java.lang.Exception e) {
+            IJ.log("startAcq: error setting xy stage velocity " + xyStageCommand);
+            IJ.log(e.getMessage());
         }
+    }
 
-        ImageProcessor ip;
-        // get info. from the live window
-        ip = imp.getProcessor();
-        Roi roi = imp.getRoi();
-        int width = imp.getWidth();
-        int height = imp.getHeight();
-        int roiwidth = width / 2;
-        int roiheight = height;
-        Roi leftroi;
-        leftroi = new Roi(0, 0, width / 2, height);
-        Roi rightroi;
-        rightroi = new Roi(width / 2, 0, width / 2, height);
+    // called in startAcq when there is an existing image stack to process
+    void processExistingImageStack(ImagePlus imgPls){
+        int width = imgPls.getWidth();
+        int height = imgPls.getHeight();
+        ImageProcessor ip = imgPls.getProcessor();
+        Roi roi = new Roi(0, 0, width / 2, height);
 
-        if (roi != null && !tpf.trackRightSideScreen.getState()) {
-            Rectangle r = roi.getBounds();
-            roiwidth = r.width;
-            roiheight = r.height;
-        } else {
-            if (!tpf.trackRightSideScreen.getState()) {
-                // set roi at left half.
-                IJ.log("startAcq: no existing roi, set roi to the left side of the screen");
-                roi = (Roi) leftroi.clone();
-            } else {
-                // set roi at right half.
-                IJ.log("startAcq: no existing roi, set roi to the right side of the screen");
-                roi = (Roi) rightroi.clone();
-
-            }
-        }
-
-        ImageStatistics imstat = imp.getStatistics(16);
-
-        // If there is stack, process it without stage control.
-        if (imp.getImageStackSize() > 1) {
-            // get start time
-            Date d1 = new java.util.Date();
-            IJ.log("startAcq: processing image stack at start time" + d1.getTime());
-            ImageStack imgstack = imp.getStack();
-            int slicenumber = imp.getNSlices();
-            binaryimgstack = new ImageStack(width / 4, height / 2, slicenumber);// out put to check how look like
-            // if width is not multiple of 4, cause error
-            measurespre = new double[][] { { 0 }, { 0 } };
-            // measures;
-            double[][] mindist;
-            targethistory = new double[slicenumber][3];
-            double[] shift = new double[2];
-            double roiorder[][] = null;
+        Date d1 = new java.util.Date();
+        IJ.log("startAcq: processing image stack at start time" + d1.getTime());
+        ImageStack imgstack = imgPls.getStack();
+        int slicenumber = imgPls.getNSlices();
+        binaryimgstack = new ImageStack(width / 4, height / 2, slicenumber);// out put to check how look like
+        // if width is not multiple of 4, cause error
+        measurespre = new double[][] { { 0 }, { 0 } };
+        // measures;
+        double[][] mindist;
+        targethistory = new double[slicenumber][3];
+        double[] shift = new double[2];
+        double roiorder[][] = null;
             for (int i = 0; i < slicenumber; i++) {
-                imp.setSlice(i + 1);
-                imp.setRoi(leftroi);
+                imgPls.setSlice(i + 1);
+                imgPls.setRoi(roi);
                 ImageProcessor ipleft = ip.crop();
                 ImagePlus impleft = new ImagePlus("l", ipleft);
                 String thresholdmethod = tpf.thresholdMethodSelector.getSelectedItem();
@@ -725,421 +676,429 @@ class Tracker extends Thread {
 
             ImagePlus imp3 = new ImagePlus("binarystack", binaryimgstack);
             imp3.show();
-            return;
-        } // if(imp.getImageStackSize()>1) end
-          // image acquisition
-        else {
-            // start acquisition
 
-            File outfile = null;
-            OutputStream outstream = null;
-            FileInfo fi = imp.getFileInfo();
-            TiffEncoder tiffencoder = new TiffEncoder(fi);
-            double[] xposarray = new double[numFrames];
-            double[] yposarray = new double[numFrames];
+    }
 
-            // 50msec wait doesn't work?
-            try {
-                mmc_.startSequenceAcquisition(numFrames, 0, false);
-            } catch (java.lang.Exception e) {
-                IJ.log("startAcq: error calling MMCore startSequenceAcquisition");
-                IJ.log(e.getMessage());
+    /*---------------------------------------  start process-------------------------------------------------*/
+
+    //////////////////////////////////////////////////////////////////////////////////
+    public void startAcq(String arg) {
+        String PORT = getXYStagePort();
+        String stagelabel = mmc_.getXYStageDevice();
+        String zstagelabel = mmc_.getFocusDevice();
+
+        if( PORT == "" ){
+            IJ.log("startAcq: XY stage port is not found, can't start image acquisition");
+        }
+
+        // static values are last even after process. need to clear onece have done.
+        countslice = 0;
+        binaryimgstack = null;
+        preroiarraylist = null;
+        predistance = 0.0;
+        pretheta = 10.0;// normal radian must beteween =-pi. so this value could use to check if there
+                        // is pretheta.
+        threshsum = 0;
+        threahaverage = 0;
+
+        double zpos = 0;
+
+        try {
+            zpos = mmc_.getPosition(zstagelabel);
+        } catch (java.lang.Exception e) {
+            IJ.log("startAcq: error getting z position from zstage " + zstagelabel);
+            IJ.log(e.getMessage());
+        }
+
+        ImageProcessor ip;
+        // get info. from the live window
+        ip = imp.getProcessor();
+        Roi roi = imp.getRoi();
+        int width = imp.getWidth();
+        int height = imp.getHeight();
+        int roiwidth = width / 2;
+        int roiheight = height;
+        Roi leftroi;
+        leftroi = new Roi(0, 0, width / 2, height);
+        Roi rightroi;
+        rightroi = new Roi(width / 2, 0, width / 2, height);
+
+        if (roi != null && !tpf.trackRightSideScreen.getState()) {
+            Rectangle r = roi.getBounds();
+            roiwidth = r.width;
+            roiheight = r.height;
+        } else {
+            if (!tpf.trackRightSideScreen.getState()) {
+                // set roi at left half.
+                IJ.log("startAcq: no existing roi, set roi to the left side of the screen");
+                roi = (Roi) leftroi.clone();
+            } else {
+                // set roi at right half.
+                IJ.log("startAcq: no existing roi, set roi to the right side of the screen");
+                roi = (Roi) rightroi.clone();
+
             }
+        }
 
-            imp.setDisplayRange(imstat.min, imstat.max);
-            imp.show();
-            Date d1 = new java.util.Date();
-            IJ.log("startAcq: starting image acquisition at time " + d1.getTime());
-            measurespre = new double[][] { { 0 }, { 0 } };
-            // measures;
-            double[][] mindist;
-            // targethistory[slicenumber][roi index, x, y]
-            targethistory = new double[numFrames][3];
-            double[] shift = new double[2];
-            double[] stagepos = new double[2];
-            double roiorder[][] = null;
-            double[] distancefromcenter = new double[2];
-            java.lang.Object img = new short[width * height];
-            double xv = 0;
-            double yv = 0;
-            String ans = "";
-            int i = 0;
-            int skip = Integer.parseInt(tpf.numSkipFramesText.getText());// if it 2, keep 1 out of 2 image
-            // int interval= Integer.parseInt(tpf.intervaltext.getText());//msec. if it 0,
-            // ignore.
-            int skipcount = 0;
-            double[] centorofmass = new double[2];
-            // while imaging...
-            long nanotimecurrent = System.nanoTime();
-            long nanotimepre = 0;
-            while (mmc_.isSequenceRunning()) {
-                if (mmc_.getRemainingImageCount() > 0) {
-                    try {
-                        img = mmc_.popNextImage();// img is byte array,[B, or Short array [S
+        ImageStatistics imstat = imp.getStatistics(16);
+
+        // If there is stack, process it without stage control.
+        if (imp.getImageStackSize() > 1) {
+            processExistingImageStack(imp);
+            return;
+        } 
+
+        // start acquisition
+
+        File outfile = null;
+        OutputStream outstream = null;
+        FileInfo fi = imp.getFileInfo();
+        TiffEncoder tiffencoder = new TiffEncoder(fi);
+        double[] xposarray = new double[numFrames];
+        double[] yposarray = new double[numFrames];
+
+        // 50msec wait doesn't work?
+        try {
+            mmc_.startSequenceAcquisition(numFrames, 0, false);
+        } catch (java.lang.Exception e) {
+            IJ.log("startAcq: error calling MMCore startSequenceAcquisition");
+            IJ.log(e.getMessage());
+        }
+
+        imp.setDisplayRange(imstat.min, imstat.max);
+        imp.show();
+        Date d1 = new java.util.Date();
+        IJ.log("startAcq: starting image acquisition at time " + d1.getTime());
+        measurespre = new double[][] { { 0 }, { 0 } };
+        // measures;
+        double[][] mindist;
+        // targethistory[slicenumber][roi index, x, y]
+        targethistory = new double[numFrames][3];
+        double[] shift = new double[2];
+        double[] stagepos = new double[2];
+        double roiorder[][] = null;
+        double[] distancefromcenter = new double[2];
+        java.lang.Object img = new short[width * height];
+        double xv = 0;
+        double yv = 0;
+        String ans = "";
+        int i = 0;
+        int skip = Integer.parseInt(tpf.numSkipFramesText.getText());// if it 2, keep 1 out of 2 image
+        // int interval= Integer.parseInt(tpf.intervaltext.getText());//msec. if it 0,
+        // ignore.
+        int skipcount = 0;
+        double[] centorofmass = new double[2];
+        // while imaging...
+        long nanotimecurrent = System.nanoTime();
+        long nanotimepre = 0;
+        while (mmc_.isSequenceRunning()) {
+            if (mmc_.getRemainingImageCount() > 0) {
+                try {
+                    img = mmc_.popNextImage();// img is byte array,[B, or Short array [S
+                } catch (java.lang.Exception e) {
+                    IJ.log("startAcq: error calling MMCore popNextImage");
+                    IJ.log(e.getMessage());
+                }
+                skipcount = (skipcount + 1) % skip;
+                nanotimecurrent = System.nanoTime();
+                // throw the data
+                if (skipcount == 0)// else throw the data
+                {
+                    nanotimepre = nanotimecurrent;
+                    ip.setPixels(img);
+                    imp.setProcessor(imp.getTitle(), ip);
+                    imp.updateImage();
+                    // I don't get why there are two getXYpos methods in both mmc and gui.
+                    try// it seems some case, getting xpos fails. try serial port. not resolved by
+                        // serial port.
+                    {
+
+                        xposarray[i] = mmc_.getXPosition(stagelabel);
+                        yposarray[i] = mmc_.getYPosition(stagelabel);
+                        zpos = mmc_.getPosition(zstagelabel);
+
                     } catch (java.lang.Exception e) {
-                        IJ.log("startAcq: error calling MMCore popNextImage");
+                        IJ.log("startAcq: error calling MMCore getPosition");
                         IJ.log(e.getMessage());
                     }
-                    skipcount = (skipcount + 1) % skip;
-                    nanotimecurrent = System.nanoTime();
-                    // throw the data
-                    if (skipcount == 0)// else throw the data
+                    if (!ready)// if this is runnning as real imaging process, save images.
                     {
-                        nanotimepre = nanotimecurrent;
-                        ip.setPixels(img);
-                        imp.setProcessor(imp.getTitle(), ip);
-                        imp.updateImage();
-                        // I don't get why there are two getXYpos methods in both mmc and gui.
-                        try// it seems some case, getting xpos fails. try serial port. not resolved by
-                           // serial port.
-                        {
-
-                            xposarray[i] = mmc_.getXPosition(stagelabel);
-                            yposarray[i] = mmc_.getYPosition(stagelabel);
-                            zpos = mmc_.getPosition(zstagelabel);
-
+                        // out put each frame
+                        outfile = new File(imageSaveDirectory + "/" + String.valueOf(i) + ".tif");
+                        try {
+                            outfile.createNewFile();
                         } catch (java.lang.Exception e) {
-                            IJ.log("startAcq: error calling MMCore getPosition");
+                            IJ.log("startAcq: error creating outfile");
                             IJ.log(e.getMessage());
                         }
-                        if (!ready)// if this is runnning as real imaging process, save images.
+                        try {
+                            outstream = new FileOutputStream(outfile);
+                        } catch (java.lang.Exception e) {
+                            IJ.log("startAcq: error creating FileOutputStream");
+                            IJ.log(e.getMessage());
+                        }
+                        fi = imp.getFileInfo();
+                        fi.info = "xpos=" + String.valueOf(xposarray[i]) + ",ypos=" + String.valueOf(yposarray[i])
+                                + ",zpos=" + String.valueOf(zpos);
+                        tiffencoder = new TiffEncoder(fi);
+                        try {
+                            tiffencoder.write(outstream);
+                        } catch (java.lang.Exception e) {
+                            IJ.log("startAcq: error writing outstream to tiff encoder");
+                            IJ.log(e.getMessage());
+                        }
+                        try {
+                            outstream.close();
+                        } catch (java.lang.Exception e) {
+                            IJ.log("startAcq: error closing outstream");
+                            IJ.log(e.getMessage());
+                        }
+                    } // if(!ready) end
+
+                    if (!tpf.useManualTracking.getState()) {
+                        if (!tpf.useCenterOfMassTracking.getState() && !tpf.useFullFieldImaging.getState())// for normal thresholding method.
                         {
-                            // out put each frame
-                            outfile = new File(imageSaveDirectory + "/" + String.valueOf(i) + ".tif");
-                            try {
-                                outfile.createNewFile();
-                            } catch (java.lang.Exception e) {
-                                IJ.log("startAcq: error creating outfile");
-                                IJ.log(e.getMessage());
-                            }
-                            try {
-                                outstream = new FileOutputStream(outfile);
-                            } catch (java.lang.Exception e) {
-                                IJ.log("startAcq: error creating FileOutputStream");
-                                IJ.log(e.getMessage());
-                            }
-                            fi = imp.getFileInfo();
-                            fi.info = "xpos=" + String.valueOf(xposarray[i]) + ",ypos=" + String.valueOf(yposarray[i])
-                                    + ",zpos=" + String.valueOf(zpos);
-                            tiffencoder = new TiffEncoder(fi);
-                            try {
-                                tiffencoder.write(outstream);
-                            } catch (java.lang.Exception e) {
-                                IJ.log("startAcq: error writing outstream to tiff encoder");
-                                IJ.log(e.getMessage());
-                            }
-                            try {
-                                outstream.close();
-                            } catch (java.lang.Exception e) {
-                                IJ.log("startAcq: error closing outstream");
-                                IJ.log(e.getMessage());
-                            }
-                        } // if(!ready) end
 
-                        if (!tpf.useManualTracking.getState()) {
-                            if (!tpf.useCenterOfMassTracking.getState() && !tpf.useFullFieldImaging.getState())// for normal thresholding method.
+                            imp.setRoi(roi);
+                            ImageProcessor ip_current = imp.getProcessor();
+                            ImageProcessor ipleft = ip_current.crop();
+                            ImagePlus impleft = new ImagePlus("l", ipleft);
+                            String thresholdmethod = tpf.thresholdMethodSelector.getSelectedItem();
+                            measures = getObjmeasures(impleft, ipleft, false, thresholdmethod);
+                            if (measures.length == 0)// if lost any cells
                             {
-
-                                imp.setRoi(roi);
-                                ImageProcessor ip_current = imp.getProcessor();
-                                ImageProcessor ipleft = ip_current.crop();
-                                ImagePlus impleft = new ImagePlus("l", ipleft);
-                                String thresholdmethod = tpf.thresholdMethodSelector.getSelectedItem();
-                                measures = getObjmeasures(impleft, ipleft, false, thresholdmethod);
-                                if (measures.length == 0)// if lost any cells
-                                {
-                                    IJ.log("startAcq: target lost when not manual tracking");
-                                    // test to continue imaging
-                                    measures = measurespre;
-                                }
-                                if (i != 0)// after second image
-                                {
-                                    mindist = getMinDist(measurespre, measures);
-                                    int j;
-                                    int previoustarget = (int) targethistory[i - 1][0];
-                                    int newtarget = (int) mindist[previoustarget][0];
-                                    targethistory[i][0] = newtarget;
-                                    targethistory[i][1] = measures[newtarget][2];
-                                    targethistory[i][2] = measures[newtarget][3];
-                                    shift[0] = mindist[previoustarget][2];
-                                    shift[1] = mindist[previoustarget][3];
-                                    IJ.log(shift[0] + "," + shift[1]);
-                                    // multiply 2 because resized 1/2
-                                    distancefromcenter[0] = width / 4 - measures[newtarget][2] * 2;
-                                    distancefromcenter[1] = height / 2 - measures[newtarget][3] * 2;
-                                    // for non resised version:
-                                    // distancefromcenter[0]=width/4-measures[newtarget][2];
-                                    // distancefromcenter[1]=height/2-measures[newtarget][3];
-
-                                } // after second image end
-                                else// first image
-                                {
-                                    // mock meaures to detect most centorized roi for resized scan, divide 4
-                                    double[][] mock = { { 0, 0, ipleft.getWidth() / 4, ipleft.getHeight() / 4 } };
-                                    double[][] initialtarget = getMinDist(mock, measures);
-                                    // for non resised version
-                                    int target = (int) initialtarget[0][0];
-                                    IJ.log("startAcq: not manual tracking - target #" + String.valueOf(target) + " roi at "
-                                            + String.valueOf(measures[target][2]) + ","
-                                            + String.valueOf(measures[target][3]));
-                                    targethistory[0][0] = target;
-                                    targethistory[0][1] = measures[target][2];
-                                    targethistory[0][2] = measures[target][3];
-                                    // multiply 2 because resized 1/2
-                                    distancefromcenter[0] = width / 4 - measures[target][2] * 2;
-                                    distancefromcenter[1] = height / 2 - measures[target][3] * 2;
-                                } // first image end
-
-                                // return [roi#][order by distance from target, distance, dx, dy]
-                                // static double[][] getRoiOrder(int targetroinum, double[][] measures)
-                                if (!tpf.useClosest.getState()) {
-                                    IJ.log("startAcq: before getRoiOrder " + String.valueOf(targethistory[i][0]));
-                                    roiorder = getRoiOrder((int) targethistory[i][0], measures);
-                                    // check target is collect or not by direcion/distance towards next roi. if
-                                    // there are more than 2 rois.
-                                    if (measures.length >= 2) {
-                                        // roiorder [roi#][order by distance from target, distance, dx, dy]
-                                        // returen same format.
-                                        // static double[][] checkDirDis(int slice, double[][] roiorder,double[][]
-                                        // measures)
-                                        double[][] checkedroiorder = checkDirDis(i + 1, roiorder, measures);
-                                        boolean trackstatus = false;
-                                        double[][] finalroiorder = new double[][] { { 0 } };
-                                        if ((int) checkedroiorder[0][0] == -1)// negative means failed
-                                        {
-                                            trackstatus = false;
-                                            finalroiorder = roiorder;
-                                        } else {
-                                            trackstatus = true;
-                                            finalroiorder = checkedroiorder;
-                                            int newtarget = 0;
-                                            for (int j = 0; j < finalroiorder.length; j++) {
-                                                if ((int) (finalroiorder[j][0]) == 0)// here is target
-                                                {
-                                                    newtarget = j;
-                                                }
-                                            }
-                                            // targethistory[slicenumber][roi index, x, y]
-                                            targethistory[i][0] = newtarget;
-                                            targethistory[i][1] = measures[newtarget][2];
-                                            targethistory[i][2] = measures[newtarget][3];
-
-                                        }
-                                        IJ.log("startAcq: after getRoiOrder " + String.valueOf(targethistory[i][0]));
-                                        // void drawRoiOrder(int slice, double[][] roiorder, double[][] measures,
-                                        // boolean trackstatus)
-                                        drawRoiOrder(i + 1, finalroiorder, measures, trackstatus);
-                                    } // if(!useClosest.getState()) end
-
-                                    // use targethistory[i][0] to calculate distance from centor.
-                                    // multiply 2 because resized 1/2
-                                    // print("target #"+newtarget+" roi at
-                                    // "+measures[newtarget][2]+","+measures[newtarget][3]);
-                                    distancefromcenter[0] = width / 4 - measures[(int) targethistory[i][0]][2] * 2;
-                                    distancefromcenter[1] = height / 2 - measures[(int) targethistory[i][0]][3] * 2;
-                                } // if(measures.length>2) end
-                                  //
-                                  // here put stage control code.
-                            } else if (tpf.useFullFieldImaging.getState())// full field
-                            {
-                                roi = new Roi(4, 4, width - 8, height - 8);// trim edge of image since it may have dark
-                                                                           // reagion
-                                imp.setRoi(roi);
-                                ImagePlus inverted = imp.duplicate();
-                                ImageProcessor ip_current = inverted.getProcessor();
-                                if (tpf.useBrightFieldImaging.getState())// for brightfield
-                                {
-                                    ip_current.invert(); // turn this off for now because it causes flashing 
-                                }
-                                ImagePlus impinv = new ImagePlus("l", ip_current);
-                                // get data and put it into double[] distancefromcenter =new double[2];
-                                if (i != 0)// after second image
-                                {
-                                    centorofmass = getCenterofMass(impinv, ip_current, roi, 4, 4);// trim 4 pix?
-                                    distancefromcenter[0] = width / 2 - centorofmass[0];
-                                    distancefromcenter[1] = height / 2 - centorofmass[1];
-                                    // targethistory[slicenumber][roi index, x, y]
-                                    targethistory[i][0] = -1;// for center of mass method, the roi index use -1,
-                                    targethistory[i][1] = centorofmass[0];
-                                    targethistory[i][2] = centorofmass[1];
-                                } else// first image
-                                {
-                                    centorofmass = getCenterofMass(impinv, ip_current, roi, 0, 0);
-                                    distancefromcenter[0] = width / 2 - centorofmass[0];
-                                    distancefromcenter[1] = height / 2 - centorofmass[1];
-                                    // targethistory[slicenumber][roi index, x, y]
-                                    targethistory[i][0] = -1;// for center of mass method, the roi index use -1,
-                                    targethistory[i][1] = centorofmass[0];
-                                    targethistory[i][2] = centorofmass[1];
-                                }
-                                imp.setRoi(roi);// just for visible.
-                                IJ.log("startAcq: center of mass values " + String.valueOf(centorofmass[0]) + " "
-                                        + String.valueOf(centorofmass[1]));
-                                IJ.log("startAcq: distance from center " + String.valueOf(distancefromcenter[0]) + " "
-                                        + String.valueOf(distancefromcenter[1]));
-
+                                IJ.log("startAcq: target lost when not manual tracking");
+                                // test to continue imaging
+                                measures = measurespre;
                             }
-                            // if(!tpf.useCenterOfMassTracking.getState()) center of mass end
-                            else // for center of mass method
+                            if (i != 0)// after second image
                             {
+                                mindist = getMinDist(measurespre, measures);
+                                int j;
+                                int previoustarget = (int) targethistory[i - 1][0];
+                                int newtarget = (int) mindist[previoustarget][0];
+                                targethistory[i][0] = newtarget;
+                                targethistory[i][1] = measures[newtarget][2];
+                                targethistory[i][2] = measures[newtarget][3];
+                                shift[0] = mindist[previoustarget][2];
+                                shift[1] = mindist[previoustarget][3];
+                                IJ.log(shift[0] + "," + shift[1]);
+                                // multiply 2 because resized 1/2
+                                distancefromcenter[0] = width / 4 - measures[newtarget][2] * 2;
+                                distancefromcenter[1] = height / 2 - measures[newtarget][3] * 2;
+                                // for non resised version:
+                                // distancefromcenter[0]=width/4-measures[newtarget][2];
+                                // distancefromcenter[1]=height/2-measures[newtarget][3];
 
-                                imp.setRoi(leftroi);
-                                ImageProcessor ip_current = imp.getProcessor();
-                                ImageProcessor ipleft = ip_current.crop();
-                                ImagePlus impleft = new ImagePlus("l", ipleft);
-                                // get data and put it into double[] distancefromcenter =new double[2];
-                                if (i != 0)// after second image
-                                {
-                                    if (roiwidth == width / 2 && roiheight == height)// usr didn't drow a roi
+                            } // after second image end
+                            else// first image
+                            {
+                                // mock meaures to detect most centorized roi for resized scan, divide 4
+                                double[][] mock = { { 0, 0, ipleft.getWidth() / 4, ipleft.getHeight() / 4 } };
+                                double[][] initialtarget = getMinDist(mock, measures);
+                                // for non resised version
+                                int target = (int) initialtarget[0][0];
+                                IJ.log("startAcq: not manual tracking - target #" + String.valueOf(target) + " roi at "
+                                        + String.valueOf(measures[target][2]) + ","
+                                        + String.valueOf(measures[target][3]));
+                                targethistory[0][0] = target;
+                                targethistory[0][1] = measures[target][2];
+                                targethistory[0][2] = measures[target][3];
+                                // multiply 2 because resized 1/2
+                                distancefromcenter[0] = width / 4 - measures[target][2] * 2;
+                                distancefromcenter[1] = height / 2 - measures[target][3] * 2;
+                            } // first image end
+
+                            // return [roi#][order by distance from target, distance, dx, dy]
+                            // static double[][] getRoiOrder(int targetroinum, double[][] measures)
+                            if (!tpf.useClosest.getState()) {
+                                IJ.log("startAcq: before getRoiOrder " + String.valueOf(targethistory[i][0]));
+                                roiorder = getRoiOrder((int) targethistory[i][0], measures);
+                                // check target is collect or not by direcion/distance towards next roi. if
+                                // there are more than 2 rois.
+                                if (measures.length >= 2) {
+                                    // roiorder [roi#][order by distance from target, distance, dx, dy]
+                                    // returen same format.
+                                    // static double[][] checkDirDis(int slice, double[][] roiorder,double[][]
+                                    // measures)
+                                    double[][] checkedroiorder = checkDirDis(i + 1, roiorder, measures);
+                                    boolean trackstatus = false;
+                                    double[][] finalroiorder = new double[][] { { 0 } };
+                                    if ((int) checkedroiorder[0][0] == -1)// negative means failed
                                     {
-                                        centorofmass = getCenterofMass(impleft, ipleft, roi, 0, 0);// the roi should be
-                                                                                                   // left roi
+                                        trackstatus = false;
+                                        finalroiorder = roiorder;
                                     } else {
-                                        int roishiftx = (int) (targethistory[i - 1][1] - roiwidth / 2.0);
-                                        int roishifty = (int) (targethistory[i - 1][2] - roiheight / 2.0);
-                                        centorofmass = getCenterofMass(impleft, ipleft, roi, roishiftx, roishifty);// use
-                                                                                                                   // the
-                                                                                                                   // previous
-                                                                                                                   // roi
-                                                                                                                   // pos
+                                        trackstatus = true;
+                                        finalroiorder = checkedroiorder;
+                                        int newtarget = 0;
+                                        for (int j = 0; j < finalroiorder.length; j++) {
+                                            if ((int) (finalroiorder[j][0]) == 0)// here is target
+                                            {
+                                                newtarget = j;
+                                            }
+                                        }
+                                        // targethistory[slicenumber][roi index, x, y]
+                                        targethistory[i][0] = newtarget;
+                                        targethistory[i][1] = measures[newtarget][2];
+                                        targethistory[i][2] = measures[newtarget][3];
+
                                     }
-                                    distancefromcenter[0] = width / 4 - centorofmass[0];
-                                    distancefromcenter[1] = height / 2 - centorofmass[1];
-                                    // targethistory[slicenumber][roi index, x, y]
-                                    targethistory[i][0] = -1;// for center of mass method, the roi index use -1,
-                                    targethistory[i][1] = centorofmass[0];
-                                    targethistory[i][2] = centorofmass[1];
-                                } else// first image
-                                {
-                                    centorofmass = getCenterofMass(impleft, ipleft, leftroi, 0, 0);// this roi is left
-                                                                                                   // roi or usr
-                                                                                                   // defined?
-                                    distancefromcenter[0] = width / 4 - centorofmass[0];
-                                    distancefromcenter[1] = height / 2 - centorofmass[1];
-                                    // targethistory[slicenumber][roi index, x, y]
-                                    targethistory[i][0] = -1;// for center of mass method, the roi index use -1,
-                                    targethistory[i][1] = centorofmass[0];
-                                    targethistory[i][2] = centorofmass[1];
-                                }
-                                imp.setRoi(roi);// just for visible.
-                                IJ.log("startAcq: center of mass is " + String.valueOf(centorofmass[0]) + " "
-                                        + String.valueOf(centorofmass[1]));
-                                IJ.log("startAcq: distance from center is " + String.valueOf(distancefromcenter[0]) + " "
-                                        + String.valueOf(distancefromcenter[1]));
+                                    IJ.log("startAcq: after getRoiOrder " + String.valueOf(targethistory[i][0]));
+                                    // void drawRoiOrder(int slice, double[][] roiorder, double[][] measures,
+                                    // boolean trackstatus)
+                                    drawRoiOrder(i + 1, finalroiorder, measures, trackstatus);
+                                } // if(!useClosest.getState()) end
+
+                                // use targethistory[i][0] to calculate distance from centor.
+                                // multiply 2 because resized 1/2
+                                // print("target #"+newtarget+" roi at
+                                // "+measures[newtarget][2]+","+measures[newtarget][3]);
+                                distancefromcenter[0] = width / 4 - measures[(int) targethistory[i][0]][2] * 2;
+                                distancefromcenter[1] = height / 2 - measures[(int) targethistory[i][0]][3] * 2;
+                            } // if(measures.length>2) end
+                                //
+                                // here put stage control code.
+                        } else if (tpf.useFullFieldImaging.getState())// full field
+                        {
+                            roi = new Roi(4, 4, width - 8, height - 8);// trim edge of image since it may have dark
+                                                                        // reagion
+                            imp.setRoi(roi);
+                            ImagePlus inverted = imp.duplicate();
+                            ImageProcessor ip_current = inverted.getProcessor();
+                            if (tpf.useBrightFieldImaging.getState())// for brightfield
+                            {
+                                ip_current.invert(); // turn this off for now because it causes flashing 
                             }
-                            double distancescalar = Math.sqrt((distancefromcenter[0]) * (distancefromcenter[0])
-                                    + (distancefromcenter[1]) * (distancefromcenter[1]));
-                            if (distancescalar > LIMIT) {
-                                // 100 msec 0.0018?
-                                xv = Math.round(-distancefromcenter[0] * 0.0018 * 1000.0) / 1000.0;
-                                yv = Math.round(distancefromcenter[1] * 0.0018 * 1000.0) / 1000.0;
-                                // 10x obj, need to be increased...may be x4?
-                                int accelint = 1;
-                                if (tpf.stageAccelerationSelector.getSelectedItem() == "1x") {
-                                    accelint = 1;
-                                } else if (tpf.stageAccelerationSelector.getSelectedItem() == "2x") {
-                                    accelint = 2;
-                                } else if (tpf.stageAccelerationSelector.getSelectedItem() == "4x") {
-                                    accelint = 4;
-                                } else if (tpf.stageAccelerationSelector.getSelectedItem() == "5x") {
-                                    accelint = 5;
-                                } else if (tpf.stageAccelerationSelector.getSelectedItem() == "6x") {
-                                    accelint = 6;
+                            ImagePlus impinv = new ImagePlus("l", ip_current);
+                            // get data and put it into double[] distancefromcenter =new double[2];
+                            if (i != 0)// after second image
+                            {
+                                centorofmass = getCenterofMass(impinv, ip_current, roi, 4, 4);// trim 4 pix?
+                                distancefromcenter[0] = width / 2 - centorofmass[0];
+                                distancefromcenter[1] = height / 2 - centorofmass[1];
+                                // targethistory[slicenumber][roi index, x, y]
+                                targethistory[i][0] = -1;// for center of mass method, the roi index use -1,
+                                targethistory[i][1] = centorofmass[0];
+                                targethistory[i][2] = centorofmass[1];
+                            } else// first image
+                            {
+                                centorofmass = getCenterofMass(impinv, ip_current, roi, 0, 0);
+                                distancefromcenter[0] = width / 2 - centorofmass[0];
+                                distancefromcenter[1] = height / 2 - centorofmass[1];
+                                // targethistory[slicenumber][roi index, x, y]
+                                targethistory[i][0] = -1;// for center of mass method, the roi index use -1,
+                                targethistory[i][1] = centorofmass[0];
+                                targethistory[i][2] = centorofmass[1];
+                            }
+                            imp.setRoi(roi);// just for visible.
+                            IJ.log("startAcq: center of mass values " + String.valueOf(centorofmass[0]) + " "
+                                    + String.valueOf(centorofmass[1]));
+                            IJ.log("startAcq: distance from center " + String.valueOf(distancefromcenter[0]) + " "
+                                    + String.valueOf(distancefromcenter[1]));
+
+                        }
+                        // if(!tpf.useCenterOfMassTracking.getState()) center of mass end
+                        else // for center of mass method
+                        {
+
+                            imp.setRoi(leftroi);
+                            ImageProcessor ip_current = imp.getProcessor();
+                            ImageProcessor ipleft = ip_current.crop();
+                            ImagePlus impleft = new ImagePlus("l", ipleft);
+                            // get data and put it into double[] distancefromcenter =new double[2];
+                            if (i != 0)// after second image
+                            {
+                                if (roiwidth == width / 2 && roiheight == height)// usr didn't drow a roi
+                                {
+                                    centorofmass = getCenterofMass(impleft, ipleft, roi, 0, 0);// the roi should be
+                                                                                                // left roi
+                                } else {
+                                    int roishiftx = (int) (targethistory[i - 1][1] - roiwidth / 2.0);
+                                    int roishifty = (int) (targethistory[i - 1][2] - roiheight / 2.0);
+                                    centorofmass = getCenterofMass(impleft, ipleft, roi, roishiftx, roishifty);// use
+                                                                                                                // the
+                                                                                                                // previous
+                                                                                                                // roi
+                                                                                                                // pos
                                 }
-                                xv = xv * accelint;
-                                yv = yv * accelint;
-                                IJ.log("startAcq: xv is " + String.valueOf(xv));
-                                IJ.log("startAcq: yv is " + String.valueOf(yv));
-                                if (PORT != "")// demo stage cant do this
-                                {
-                                    String command = "VECTOR X=" + String.valueOf(xv) + " Y=" + String.valueOf(yv);
-                                    try {
-                                        mmc_.setSerialPortCommand(PORT, command, "\r");
-                                    } catch (java.lang.Exception e) {
-                                        IJ.log("startAcq: error setting serial port command " + command);
-                                        IJ.log(e.getMessage());
-                                    }
-                                    try {
-                                        ans = mmc_.getSerialPortAnswer(PORT, "\r\n");
-                                    } catch (java.lang.Exception e) {
-                                        IJ.log("startAcq: error getting serial port answer from " + command);
-                                        IJ.log(e.getMessage());
-                                    }
-                                } // if(PORT!="")//demo stage cant do this end
-                                IJ.log("startAcq: ans is " + ans);
-                            } else {
-                                if (PORT != "")// demo stage cant do this
-                                {
-                                    try {
-                                        mmc_.setSerialPortCommand(PORT, "VECTOR X=0 Y=0", "\r");
-                                    } catch (java.lang.Exception e) {
-                                        IJ.log("startAcq: error setting serial port command to device at port " + PORT );
-                                        IJ.log(e.getMessage());
-                                    }
-                                    // follwoing may not need execpt for checking the control
-                                    // NO NEED By unknown reason, comment out following cause failure of getting
-                                    // stage position.
+                                distancefromcenter[0] = width / 4 - centorofmass[0];
+                                distancefromcenter[1] = height / 2 - centorofmass[1];
+                                // targethistory[slicenumber][roi index, x, y]
+                                targethistory[i][0] = -1;// for center of mass method, the roi index use -1,
+                                targethistory[i][1] = centorofmass[0];
+                                targethistory[i][2] = centorofmass[1];
+                            } else// first image
+                            {
+                                centorofmass = getCenterofMass(impleft, ipleft, leftroi, 0, 0);// this roi is left
+                                                                                                // roi or usr
+                                                                                                // defined?
+                                distancefromcenter[0] = width / 4 - centorofmass[0];
+                                distancefromcenter[1] = height / 2 - centorofmass[1];
+                                // targethistory[slicenumber][roi index, x, y]
+                                targethistory[i][0] = -1;// for center of mass method, the roi index use -1,
+                                targethistory[i][1] = centorofmass[0];
+                                targethistory[i][2] = centorofmass[1];
+                            }
+                            imp.setRoi(roi);// just for visible.
+                            IJ.log("startAcq: center of mass is " + String.valueOf(centorofmass[0]) + " "
+                                    + String.valueOf(centorofmass[1]));
+                            IJ.log("startAcq: distance from center is " + String.valueOf(distancefromcenter[0]) + " "
+                                    + String.valueOf(distancefromcenter[1]));
+                        }
+                        double distancescalar = Math.sqrt((distancefromcenter[0]) * (distancefromcenter[0])
+                                + (distancefromcenter[1]) * (distancefromcenter[1]));
+                        if (distancescalar > LIMIT) {
+                            // 100 msec 0.0018?
+                            xv = Math.round(-distancefromcenter[0] * 0.0018 * 1000.0) / 1000.0;
+                            yv = Math.round(distancefromcenter[1] * 0.0018 * 1000.0) / 1000.0;
+                            // 10x obj, need to be increased...may be x4?
+                            int accelint = 1;
+                            if (tpf.stageAccelerationSelector.getSelectedItem() == "1x") {
+                                accelint = 1;
+                            } else if (tpf.stageAccelerationSelector.getSelectedItem() == "2x") {
+                                accelint = 2;
+                            } else if (tpf.stageAccelerationSelector.getSelectedItem() == "4x") {
+                                accelint = 4;
+                            } else if (tpf.stageAccelerationSelector.getSelectedItem() == "5x") {
+                                accelint = 5;
+                            } else if (tpf.stageAccelerationSelector.getSelectedItem() == "6x") {
+                                accelint = 6;
+                            }
+                            xv = xv * accelint;
+                            yv = yv * accelint;
+                            IJ.log("startAcq: xv is " + String.valueOf(xv));
+                            IJ.log("startAcq: yv is " + String.valueOf(yv));
+                            setXYStageVelocity(xv, yv, PORT);
+                        } else {
+                            setXYStageVelocity(0.0, 0.0, PORT);
+                        } // if(distancescalar>LIMIT) else end
+                    } // if manual tracking
+                    measurespre = measures;
+                    IJ.log("x " + String.valueOf(xposarray[i]) + " y " + String.valueOf(yposarray[i]) + " at "
+                            + String.valueOf(i));
+                    i++;
+                } // if(skipcount==0)end
+            } // if (mmc.getRemainingImageCount() > 0) end
+        } // while (mmc.isSequenceRunning()) end
 
-                                    try {
-                                        ans = mmc_.getSerialPortAnswer(PORT, "\r\n");
-                                    } catch (java.lang.Exception e) {
-                                        IJ.log("startAcq: error getting serial port answer from device at port " + PORT );
-                                        IJ.log(e.getMessage());
-                                    }
-                                    // print(ans);
-                                    try {
-                                        mmc_.setSerialPortCommand(PORT, "VECTOR X? Y?", "\r");
-                                    } catch (java.lang.Exception e) {
-                                        IJ.log("startAcq: error setting serial port command to device at port " + PORT );
-                                        IJ.log(e.getMessage());
-                                    }
-                                    try {
-                                        ans = mmc_.getSerialPortAnswer(PORT, "\r\n");
-                                    } catch (java.lang.Exception e) {
-                                        IJ.log("startAcq: error getting serial port answer from device at port " + PORT );
-                                        IJ.log(e.getMessage());
-                                    }
+        // after image acquisition finished, set the xy velocity to 0
+        setXYStageVelocity(0.0, 0.0, PORT);
 
-                                } // if(PORT!="")//demo stage cant do this end
-                                  // print(ans);
-                            } // if(distancescalar>LIMIT) else end
-                        } // if manual tracking
-                        measurespre = measures;
-                        IJ.log("x " + String.valueOf(xposarray[i]) + " y " + String.valueOf(yposarray[i]) + " at "
-                                + String.valueOf(i));
-                        i++;
-                    } // if(skipcount==0)end
-                } // if (mmc.getRemainingImageCount() > 0) end
-            } // while (mmc.isSequenceRunning()) end
+        Date d2 = new java.util.Date();
+        IJ.log("startAcq: finished image acquisition at" + d2.getTime());
+        IJ.log(String.valueOf((d2.getTime() - d1.getTime()) / 1000.0) + " sec");
 
-            // after image acquisition finished, set the xy velocity to 0
-            try {
-                mmc_.setSerialPortCommand(PORT, "VECTOR X=0 Y=0", "\r");
-                ans = mmc_.getSerialPortAnswer(PORT, "\r\n");
-
-                mmc_.setSerialPortCommand(PORT, "VECTOR X? Y?", "\r");
-                ans = mmc_.getSerialPortAnswer(PORT, "\r\n");
-            } catch (java.lang.Exception e) {
-                IJ.log("startAcq: error setting serial port command to device at port " + PORT );
-                IJ.log(e.getMessage());
+        // output saved data if user selected the option to
+        if (!ready) {
+            if (tpf.saveXYPositionsAsTextFile.getState()) {
+                saveXYPositionsToTextFile(xposarray, yposarray);
             }
+        }
 
-            Date d2 = new java.util.Date();
-            IJ.log("startAcq: finished image acquisition at" + d2.getTime());
-            IJ.log(String.valueOf((d2.getTime() - d1.getTime()) / 1000.0) + " sec");
-
-            // output saved data if user selected the option to
-            if (!ready) {
-                if (tpf.saveXYPositionsAsTextFile.getState()) {
-                    saveXYPositionsToTextFile(xposarray, yposarray);
-                }
-            }
-
-            // toggle live mode because the user may want to perform more than one acquisition
-            tpf.app.enableLiveMode(false);
-            tpf.app.enableLiveMode(true);
-            
-        } // image acquisition case end
-          // ic.removeMouseListener(this);
+        // toggle live mode because the user may want to perform more than one acquisition
+        tpf.app.enableLiveMode(false);
+        tpf.app.enableLiveMode(true);
+        
     }
 }
