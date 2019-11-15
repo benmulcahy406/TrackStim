@@ -5,19 +5,25 @@
  */
 package trackstim;
 
+import ij.IJ;
+
 /**
  *
  * @author dylan
  */
 public class TrackStimGUI extends javax.swing.JFrame {
-    
     public TrackStimController tsc;
     /**
      * Creates new form GUI
+     * @param tsc_
      */
     public TrackStimGUI(TrackStimController tsc_) {
         tsc = tsc_;
         initComponents();
+        setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
+        
+        String initialSaveDirectory = System.getProperty("user.home");
+        saveDirectoryText.setText(initialSaveDirectory);
     }
 
     /**
@@ -206,11 +212,10 @@ public class TrackStimGUI extends javax.swing.JFrame {
                             .addComponent(jLabel14, javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jLabel16))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(rampStartText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(rampBaseText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(rampEndText, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(rampEndText, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(rampBaseText, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(rampStartText, javax.swing.GroupLayout.Alignment.TRAILING))
                         .addGap(10, 10, 10))
                     .addComponent(jToggleButton2, javax.swing.GroupLayout.Alignment.TRAILING))
                 .addContainerGap())
@@ -280,7 +285,7 @@ public class TrackStimGUI extends javax.swing.JFrame {
         jLabel2.setText("Keep 1 of ");
 
         jLabel4.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
-        jLabel4.setText("frames");
+        jLabel4.setText("frame(s)");
 
         numFramesText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         numFramesText.setText("3000");
@@ -355,9 +360,15 @@ public class TrackStimGUI extends javax.swing.JFrame {
         jLabel5.setText("Save directory");
 
         saveDirectoryText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
+        saveDirectoryText.setEnabled(false);
 
         changeDirectoryBtn.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         changeDirectoryBtn.setText("change");
+        changeDirectoryBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                changeDirectoryBtnActionPerformed(evt);
+            }
+        });
 
         goBtn.setForeground(new java.awt.Color(0, 153, 0));
         goBtn.setText("GO");
@@ -451,6 +462,15 @@ public class TrackStimGUI extends javax.swing.JFrame {
     private void rampBaseTextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rampBaseTextActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_rampBaseTextActionPerformed
+
+    private void changeDirectoryBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeDirectoryBtnActionPerformed
+        // TODO add your handling code here:
+        String newDirectory = IJ.getDirectory("user.home");
+        if( newDirectory == null ){
+            newDirectory = System.getProperty("user.home");
+        }        
+        this.saveDirectoryText.setText(newDirectory);
+    }//GEN-LAST:event_changeDirectoryBtnActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

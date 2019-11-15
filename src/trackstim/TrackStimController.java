@@ -5,11 +5,7 @@
  */
 package trackstim;
 
-import java.util.prefs.Preferences;
-
-
 import ij.IJ;
-import ij.plugin.frame.PlugInFrame;
 import mmcorej.CMMCore;
 
 // provides the ui for track stim
@@ -19,9 +15,6 @@ import mmcorej.CMMCore;
 // this program was initially designed as an imageJ plugin, but is now wrapped inside a micromanager plugin
 // to migrate it to new versions of micromanager
 class TrackStimController {
-    // save user preferences
-    Preferences prefs;
-
     // intial state defaults
     // camera state
     int numFrames = 3000;
@@ -89,9 +82,7 @@ class TrackStimController {
         if( !stimulator.initialize() ){
             IJ.log("TrackStimController Constructor: could not initialize stimulator.  Stimulator related options will not work");
         }
-
-        savePath = "";
-
+        
         // initialize gui
         gui = new TrackStimGUI(this);
     }
