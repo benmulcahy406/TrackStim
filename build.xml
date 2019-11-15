@@ -9,6 +9,11 @@
 <!-- in the project's Project Properties dialog box.-->
 <project name="TrackStim" default="default" basedir=".">
     <description>Builds, tests, and runs the project TrackStim.</description>
+    <property name="pluginsDir"  location="/Users/dylan/Desktop/mm2/mmplugins" />
+    <target name="-post-jar">
+    <echo message="--Copied MM plugin JAR to basedir: ${basedir}" />
+    <copy file="${basedir}/${dist.jar}" toDir="${pluginsDir}" />
+    </target>
     <import file="nbproject/build-impl.xml"/>
     <!--
 
