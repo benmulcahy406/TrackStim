@@ -15,40 +15,9 @@ import mmcorej.CMMCore;
 // this program was initially designed as an imageJ plugin, but is now wrapped inside a micromanager plugin
 // to migrate it to new versions of micromanager
 class TrackStimController {
-    // intial state defaults
-    // camera state
-    int numFrames = 3000;
-    int skipFrame = 1;
-    int cameraExposureMsIndex = 0;
-    int cameraCycleLengthMsIndex = 0;
-
-    // tracker state
-    boolean useClosestTracking = true;
-    boolean useCenterOfMassTracking = false;
-    boolean useManualTracking = false;
-    boolean useRightSideScreenTracking = false;
-    boolean useFullFieldImaging = false;
-    boolean useBrightFieldImaging = false;
-    boolean saveXYPositionsAsTextFile = false;
-    int stageAccelerationFactor = 1;
-    String detectionAlgorithm = "Yen";
-
-    // stimulator state
-    boolean enableStimulator = false;
-    int preStimulationTimeMs = 5000;
-    int stimulationDurationMs = 1000;
-    int stimulationStrength = 63;
-    int stimulationCycleLengthMs = 5000;
-    int numStimulationCycles = 5;
-    boolean useRamp = false;
-    int rampBase = 0;
-    int rampStart = 0;
-    int rampEnd = 63;
-
     // main control objects/state
     // initalized in constructor
     CMMCore mmc;
-    String savePath;
     
     // gui
     TrackStimGUI gui;
@@ -56,22 +25,6 @@ class TrackStimController {
     // Tracker/Stimulator objects
     Tracker tracker;
     Stimulator stimulator;
-
-    public void handleRunStimulationBtnPress(){
-        // stimulator.runStimulation();
-    }
-
-    public void handleReadyBtnPress(){
-
-    }
-
-    public void handleStopBtnPress(){
-
-    }
-
-    public void handleGoBtnPress(){
-        
-    }
 
     public TrackStimController(CMMCore mmc_){
         // get micromanager core
@@ -86,4 +39,33 @@ class TrackStimController {
         // initialize gui
         gui = new TrackStimGUI(this);
     }
+
+    public void handleRunStimulationBtnPress(){
+        if( gui.uiValuesAreValid() && stimulator.initialized ){
+            try {
+                TrackStimParameters tsp = gui.getTrackStimParameters();
+                stimulator.runStimulation(tsp);
+            } catch (java.lang.Exception e){
+                IJ.showMessage("Unable to start stimulator");
+                IJ.log(e.getMessage());
+            }
+        } else {
+            IJ.showMessage("Unable to start stimulation, some values are not valid.  Ensure every text input is a number and that the chosen directory exists.");
+        }
+    }
+
+    public void handleStopBtnPress(){
+        gui.enableControls();
+    }
+
+    public void handleGoBtnPress(){
+        try {
+            gui.disableControls();
+            TrackStimParameters tsp = gui.getTrackStimParameters();
+            // do stuff with tsp
+        } catch (java.lang.Exception e){
+            IJ.showMessage("Unable to run TrackStim, some values are not valid.  Ensure every text input is a number and that the chosen directory exists.");
+        } 
+    }
+
 }

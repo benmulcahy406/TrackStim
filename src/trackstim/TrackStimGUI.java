@@ -49,20 +49,7 @@ public class TrackStimGUI extends javax.swing.JFrame {
         enableControls();
     }
     
- 
-    void disableControls(){
-        for (Component c: componentList) {
-            c.setEnabled(false);
-        }
-        stopBtn.setEnabled(true);
-    }
-    
-    void enableControls(){
-        for(Component c: componentList){
-            c.setEnabled(true);
-        }
-        stopBtn.setEnabled(false);
-    }
+        
     boolean stimulatorValuesAreValid(){
         boolean valid = true;
         try {
@@ -100,6 +87,49 @@ public class TrackStimGUI extends javax.swing.JFrame {
         return cameraValuesAreValid() 
                 && stimulatorValuesAreValid() 
                 && saveDirectoryIsValid();
+    }
+
+    // extract parsed values from the UI and return them
+    // as a paramters object
+    public TrackStimParameters getTrackStimParameters() throws java.lang.Exception {
+        File f = new File(saveDirectoryText.getText());
+        if( !f.exists() || !f.isDirectory()){
+            throw new java.lang.Exception("Save directory is not valid"); 
+        }
+        
+        int preStimVal = Integer.parseInt(preStimulationText.getText());
+        int numStimCyclesVal = Integer.parseInt(numStimulationCyclesText.getText());
+        int stimCycleLengthVal = Integer.parseInt(stimulationCycleLengthText.getText());
+        int stimDurationVal = Integer.parseInt(stimulationDurationText.getText());
+        int stimStrengthVal = Integer.parseInt(stimulationStrengthText.getText());
+        int rampStart = Integer.parseInt(rampStartText.getText());
+        int rampEnd = Integer.parseInt(rampEndText.getText());
+        int rampBase = Integer.parseInt(rampBaseText.getText());
+
+        int numFramesVal = Integer.parseInt(numFramesText.getText());
+        int numSkipFramesVal = Integer.parseInt(numSkipFramesText.getText());
+        
+        boolean enableStimulator = toggleStimulatorBtn.isSelected();
+        boolean enableRamp = toggleRampBtn.isSelected();
+        
+        return new TrackStimParameters(numFramesVal, numSkipFramesVal,
+          preStimVal, stimCycleLengthVal, stimDurationVal, stimStrengthVal,
+          numStimCyclesVal, rampBase, rampStart, rampEnd, enableStimulator, enableRamp,
+          saveDirectoryText.getText());
+    }
+ 
+    public void disableControls(){
+        for (Component c: componentList) {
+            c.setEnabled(false);
+        }
+        stopBtn.setEnabled(true);
+    }
+    
+    public void enableControls(){
+        for(Component c: componentList){
+            c.setEnabled(true);
+        }
+        stopBtn.setEnabled(false);
     }
 
     /**
@@ -523,13 +553,7 @@ public class TrackStimGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void goBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_goBtnActionPerformed
-        // TODO add your handling code here:
-        if( uiValuesAreValid() ){
-            disableControls();
-            tsc.handleGoBtnPress();            
-        } else {
-            IJ.showMessage("Unable to run TrackStim, some values are not valid.  Ensure every text input is a number and that the chosen directory exists.");
-        }
+        tsc.handleGoBtnPress();
     }//GEN-LAST:event_goBtnActionPerformed
 
     private void changeDirectoryBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeDirectoryBtnActionPerformed
@@ -543,25 +567,20 @@ public class TrackStimGUI extends javax.swing.JFrame {
 
     private void stopBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stopBtnActionPerformed
         // TODO add your handling code here:
-        enableControls();
         tsc.handleStopBtnPress();
     }//GEN-LAST:event_stopBtnActionPerformed
 
     private void testStimulatorBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_testStimulatorBtnActionPerformed
         // TODO add your handling code here:
-        if( uiValuesAreValid() ){
-            tsc.handleRunStimulationBtnPress();            
-        } else {
-            IJ.showMessage("Unable to start stimulation, some values are not valid.  Ensure every text input is a number and that the chosen directory exists.");
-        }
+        tsc.handleRunStimulationBtnPress();
     }//GEN-LAST:event_testStimulatorBtnActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel actionsPanel;
     private javax.swing.JPanel cameraSettingsPanel;
-    private javax.swing.JButton changeDirectoryBtn;
-    private javax.swing.JButton goBtn;
+    public javax.swing.JButton changeDirectoryBtn;
+    public javax.swing.JButton goBtn;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -582,22 +601,22 @@ public class TrackStimGUI extends javax.swing.JFrame {
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
-    private javax.swing.JTextField numFramesText;
-    private javax.swing.JTextField numSkipFramesText;
-    private javax.swing.JTextField numStimulationCyclesText;
-    private javax.swing.JTextField preStimulationText;
-    private javax.swing.JTextField rampBaseText;
-    private javax.swing.JTextField rampEndText;
-    private javax.swing.JTextField rampStartText;
-    private javax.swing.JTextField saveDirectoryText;
-    private javax.swing.JTextField stimulationCycleLengthText;
-    private javax.swing.JTextField stimulationDurationText;
-    private javax.swing.JTextField stimulationStrengthText;
+    public javax.swing.JTextField numFramesText;
+    public javax.swing.JTextField numSkipFramesText;
+    public javax.swing.JTextField numStimulationCyclesText;
+    public javax.swing.JTextField preStimulationText;
+    public javax.swing.JTextField rampBaseText;
+    public javax.swing.JTextField rampEndText;
+    public javax.swing.JTextField rampStartText;
+    public javax.swing.JTextField saveDirectoryText;
+    public javax.swing.JTextField stimulationCycleLengthText;
+    public javax.swing.JTextField stimulationDurationText;
+    public javax.swing.JTextField stimulationStrengthText;
     private javax.swing.JPanel stimulatorSettingsPanel;
-    private javax.swing.JButton stopBtn;
-    private javax.swing.JButton testStimulatorBtn;
-    private javax.swing.JToggleButton toggleRampBtn;
-    private javax.swing.JToggleButton toggleStimulatorBtn;
+    public javax.swing.JButton stopBtn;
+    public javax.swing.JButton testStimulatorBtn;
+    public javax.swing.JToggleButton toggleRampBtn;
+    public javax.swing.JToggleButton toggleStimulatorBtn;
     private javax.swing.JPanel trackerSettingsPanel;
     // End of variables declaration//GEN-END:variables
 }

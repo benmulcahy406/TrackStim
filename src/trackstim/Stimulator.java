@@ -55,7 +55,7 @@ class SignalSender implements Runnable {
 class Stimulator {
     CMMCore mmc;
     String stimulatorPort;
-    boolean initialized = false;
+    public boolean initialized = false;
 
     static final int STIMULATION_CHANNEL = 0; // the channel to send ths signals to
     static final String STIMULATOR_DEVICE_LABEL = "FreeSerialPort"; // hardcoded device label found in config trackstim-mm1.4.23mac.cfg
@@ -112,44 +112,40 @@ class Stimulator {
     //    rampBase: strength applied
     //    rampStart: signal at the start of the interval
     //    rampEnd: signal at the end of the interval
-    void runStimulation(
-        boolean useRamp, int preStimTimeMs, int signal, 
-        int stimDurationMs, int stimCycleDurationMs, int numStimCycles, 
-        int rampBase, int rampStart, int rampEnd) throws java.lang.Exception {
-
+    void runStimulation(TrackStimParameters tsp) throws java.lang.Exception {
         if(!initialized){
             throw new Exception("could not run stimulation.  the stimulator is not initialized");
         }
 
         try {
-            if (useRamp) {
+            if (tsp.enableRamp) {
                 // incrementally increase light strength
-                int rampSignalDelta = Math.abs(rampEnd - rampStart);
-                int rampSign = Integer.signum(rampEnd - rampStart);
+                int rampSignalDelta = Math.abs(tsp.rampEnd - tsp.rampStart);
+                int rampSign = Integer.signum(tsp.rampEnd - tsp.rampStart);
 
 
-                for (int i = 0; i < numStimCycles; i++) {
+                for (int i = 0; i < tsp.numStimulationCycles; i++) {
 
                     // schedule signals with incrementally increasing light strength
                     for (int j = 0; j < rampSignalDelta + 1; j++) {
-                        scheduleSignal(preStimTimeMs + i * stimCycleDurationMs + j * (stimDurationMs / rampSignalDelta),
-                                rampStart + j * rampSign);
+                        scheduleSignal(tsp.preStimulationLengthMs + i * tsp.stimulationCycleLengthMs + j * (tsp.stimulationDurationMs / rampSignalDelta),
+                                tsp.rampStart + j * rampSign);
                     }
 
                     // schedule signal to turn off light at end of cycle
-                    scheduleSignal(preStimTimeMs + stimDurationMs + i * stimCycleDurationMs, rampBase);
+                    scheduleSignal(tsp.preStimulationLengthMs + tsp.stimulationDurationMs + i * tsp.stimulationCycleLengthMs, tsp.rampBase);
                 }
             } else {
                 // send full light strength right away
-                for (int i = 0; i < numStimCycles; i++) {
-                    int signalTimePtBegin = preStimTimeMs + i * stimCycleDurationMs;
-                    int signalTimePtEnd = signalTimePtBegin + stimDurationMs;
+                for (int i = 0; i < tsp.numStimulationCycles; i++) {
+                    int signalTimePtBegin = tsp.preStimulationLengthMs + i * tsp.stimulationCycleLengthMs;
+                    int signalTimePtEnd = signalTimePtBegin + tsp.stimulationDurationMs;
 
                     // schedule signal to turn on light at beginning cycle
-                    scheduleSignal(signalTimePtBegin, signal);
+                    scheduleSignal(signalTimePtBegin, tsp.stimulationStrength);
 
                     // schedule signal to turn off light at end of cycle
-                    scheduleSignal(signalTimePtEnd, rampBase);
+                    scheduleSignal(signalTimePtEnd, tsp.rampBase);
                 }
             }
         } catch (java.lang.Exception e) {
