@@ -14,14 +14,12 @@ import org.micromanager.Studio;
 
 @Plugin(type = MenuPlugin.class)
 public class TrackStimPlugin implements SciJavaPlugin, MenuPlugin {
-   public TrackStimGUI gui;
+   public TrackStimController tsc;
    public Studio studio;
 
    @Override
-   public void setContext(Studio studio) {
-      studio = studio;
-
-      gui = new TrackStimGUI(studio);
+   public void setContext(Studio studio_) {
+      studio = studio_;
    }
 
    /**
@@ -29,7 +27,8 @@ public class TrackStimPlugin implements SciJavaPlugin, MenuPlugin {
     */
    @Override
    public void onPluginSelected() {
-      gui.setVisible(true);
+      tsc = new TrackStimController(studio.core());
+      tsc.gui.setVisible(true);
    }
 
    /**
