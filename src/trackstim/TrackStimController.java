@@ -57,7 +57,7 @@ class TrackStimController {
     Tracker tracker;
     Stimulator stimulator;
 
-    public void runStimulation(){
+    public void handleRunStimulationBtnPress(){
         // stimulator.runStimulation();
     }
 

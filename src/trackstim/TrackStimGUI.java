@@ -6,6 +6,8 @@
 package trackstim;
 
 import ij.IJ;
+import java.awt.Component;
+import java.io.File;
 
 /**
  *
@@ -13,17 +15,91 @@ import ij.IJ;
  */
 public class TrackStimGUI extends javax.swing.JFrame {
     public TrackStimController tsc;
-    /**
-     * Creates new form GUI
-     * @param tsc_
-     */
+    public Component[] componentList;
+    
     public TrackStimGUI(TrackStimController tsc_) {
         tsc = tsc_;
         initComponents();
-        setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
+        
+        // to iteratively disable/enable components
+        componentList = new Component[]{ 
+            goBtn, 
+            stopBtn,
+            testStimulatorBtn,
+            toggleRampBtn,
+            toggleStimulatorBtn,
+            changeDirectoryBtn,
+            
+            numSkipFramesText,
+            numFramesText,
+           
+            numStimulationCyclesText,
+            stimulationCycleLengthText,
+            stimulationDurationText,
+            stimulationStrengthText,
+            preStimulationText,
+            rampBaseText,
+            rampEndText,
+            rampStartText            
+        };
         
         String initialSaveDirectory = System.getProperty("user.home");
         saveDirectoryText.setText(initialSaveDirectory);
+        
+        enableControls();
+    }
+    
+ 
+    void disableControls(){
+        for (Component c: componentList) {
+            c.setEnabled(false);
+        }
+        stopBtn.setEnabled(true);
+    }
+    
+    void enableControls(){
+        for(Component c: componentList){
+            c.setEnabled(true);
+        }
+        stopBtn.setEnabled(false);
+    }
+    boolean stimulatorValuesAreValid(){
+        boolean valid = true;
+        try {
+            Integer.parseInt(preStimulationText.getText());
+            Integer.parseInt(numStimulationCyclesText.getText());
+            Integer.parseInt(stimulationCycleLengthText.getText());
+            Integer.parseInt(stimulationDurationText.getText());
+            Integer.parseInt(stimulationStrengthText.getText());
+        } catch(java.lang.Exception e){
+            valid = false;
+        }
+        
+        return valid;
+    }
+    
+    boolean cameraValuesAreValid(){
+        boolean valid = true;
+        try {
+            Integer.parseInt(numFramesText.getText());
+            Integer.parseInt(numSkipFramesText.getText());
+        } catch(java.lang.Exception e){
+            valid = false;
+        }
+        
+        return valid;
+    }
+    
+    
+    boolean saveDirectoryIsValid(){
+        File f = new File(saveDirectoryText.getText());
+        return f.exists() && f.isDirectory();
+    }
+    
+    boolean uiValuesAreValid(){
+        return cameraValuesAreValid() 
+                && stimulatorValuesAreValid() 
+                && saveDirectoryIsValid();
     }
 
     /**
@@ -49,9 +125,9 @@ public class TrackStimGUI extends javax.swing.JFrame {
         jLabel11 = new javax.swing.JLabel();
         stimulationCycleLengthText = new javax.swing.JTextField();
         jLabel12 = new javax.swing.JLabel();
-        numStimulationCycles = new javax.swing.JTextField();
+        numStimulationCyclesText = new javax.swing.JTextField();
         jPanel2 = new javax.swing.JPanel();
-        jToggleButton2 = new javax.swing.JToggleButton();
+        toggleRampBtn = new javax.swing.JToggleButton();
         jLabel14 = new javax.swing.JLabel();
         rampBaseText = new javax.swing.JTextField();
         jLabel15 = new javax.swing.JLabel();
@@ -77,12 +153,15 @@ public class TrackStimGUI extends javax.swing.JFrame {
         jSeparator2 = new javax.swing.JSeparator();
         jSeparator3 = new javax.swing.JSeparator();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
         jLabel7.setText("Stimulator");
 
         testStimulatorBtn.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         testStimulatorBtn.setText("Test with these settings");
+        testStimulatorBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                testStimulatorBtnActionPerformed(evt);
+            }
+        });
 
         toggleStimulatorBtn.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         toggleStimulatorBtn.setText("Enable");
@@ -114,8 +193,8 @@ public class TrackStimGUI extends javax.swing.JFrame {
         jLabel12.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         jLabel12.setText("Number of cycles");
 
-        numStimulationCycles.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
-        numStimulationCycles.setText("10");
+        numStimulationCyclesText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
+        numStimulationCyclesText.setText("10");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -131,21 +210,20 @@ public class TrackStimGUI extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel12)
                         .addGap(18, 18, 18)
-                        .addComponent(numStimulationCycles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(numStimulationCyclesText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                         .addGroup(jPanel1Layout.createSequentialGroup()
                             .addComponent(jLabel11)
                             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(stimulationCycleLengthText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel10)
-                                .addGap(18, 18, 18)
-                                .addComponent(stimulationStrengthText, javax.swing.GroupLayout.DEFAULT_SIZE, 30, Short.MAX_VALUE))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel9)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(stimulationDurationText)))))
+                        .addGroup(jPanel1Layout.createSequentialGroup()
+                            .addComponent(jLabel10)
+                            .addGap(18, 18, 18)
+                            .addComponent(stimulationStrengthText))
+                        .addGroup(jPanel1Layout.createSequentialGroup()
+                            .addComponent(jLabel9)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addComponent(stimulationDurationText))))
                 .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -169,23 +247,18 @@ public class TrackStimGUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel12)
-                    .addComponent(numStimulationCycles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(numStimulationCyclesText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
 
-        jToggleButton2.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
-        jToggleButton2.setText("Enable ramp");
+        toggleRampBtn.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
+        toggleRampBtn.setText("Enable ramp");
 
         jLabel14.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         jLabel14.setText("Ramp base");
 
         rampBaseText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         rampBaseText.setText("0");
-        rampBaseText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                rampBaseTextActionPerformed(evt);
-            }
-        });
 
         jLabel15.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         jLabel15.setText("Ramp start");
@@ -217,14 +290,14 @@ public class TrackStimGUI extends javax.swing.JFrame {
                             .addComponent(rampBaseText, javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(rampStartText, javax.swing.GroupLayout.Alignment.TRAILING))
                         .addGap(10, 10, 10))
-                    .addComponent(jToggleButton2, javax.swing.GroupLayout.Alignment.TRAILING))
+                    .addComponent(toggleRampBtn, javax.swing.GroupLayout.Alignment.TRAILING))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addGap(0, 3, Short.MAX_VALUE)
-                .addComponent(jToggleButton2)
+                .addComponent(toggleRampBtn)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel14)
@@ -289,11 +362,6 @@ public class TrackStimGUI extends javax.swing.JFrame {
 
         numFramesText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         numFramesText.setText("3000");
-        numFramesText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                numFramesTextActionPerformed(evt);
-            }
-        });
 
         numSkipFramesText.setFont(new java.awt.Font("Lucida Grande", 0, 10)); // NOI18N
         numSkipFramesText.setText("1");
@@ -380,6 +448,11 @@ public class TrackStimGUI extends javax.swing.JFrame {
 
         stopBtn.setForeground(new java.awt.Color(255, 0, 0));
         stopBtn.setText("STOP");
+        stopBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                stopBtnActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout actionsPanelLayout = new javax.swing.GroupLayout(actionsPanel);
         actionsPanel.setLayout(actionsPanelLayout);
@@ -418,15 +491,13 @@ public class TrackStimGUI extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(actionsPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(trackerSettingsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(cameraSettingsPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(jSeparator1)
             .addComponent(jSeparator2)
             .addComponent(jSeparator3)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(stimulatorSettingsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addComponent(actionsPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(stimulatorSettingsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -451,17 +522,15 @@ public class TrackStimGUI extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void numFramesTextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numFramesTextActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_numFramesTextActionPerformed
-
     private void goBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_goBtnActionPerformed
         // TODO add your handling code here:
+        if( uiValuesAreValid() ){
+            disableControls();
+            tsc.handleGoBtnPress();            
+        } else {
+            IJ.showMessage("Unable to run TrackStim, some values are not valid.  Ensure every text input is a number and that the chosen directory exists.");
+        }
     }//GEN-LAST:event_goBtnActionPerformed
-
-    private void rampBaseTextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rampBaseTextActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_rampBaseTextActionPerformed
 
     private void changeDirectoryBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeDirectoryBtnActionPerformed
         // TODO add your handling code here:
@@ -471,6 +540,21 @@ public class TrackStimGUI extends javax.swing.JFrame {
         }        
         this.saveDirectoryText.setText(newDirectory);
     }//GEN-LAST:event_changeDirectoryBtnActionPerformed
+
+    private void stopBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stopBtnActionPerformed
+        // TODO add your handling code here:
+        enableControls();
+        tsc.handleStopBtnPress();
+    }//GEN-LAST:event_stopBtnActionPerformed
+
+    private void testStimulatorBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_testStimulatorBtnActionPerformed
+        // TODO add your handling code here:
+        if( uiValuesAreValid() ){
+            tsc.handleRunStimulationBtnPress();            
+        } else {
+            IJ.showMessage("Unable to start stimulation, some values are not valid.  Ensure every text input is a number and that the chosen directory exists.");
+        }
+    }//GEN-LAST:event_testStimulatorBtnActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -495,14 +579,12 @@ public class TrackStimGUI extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel4;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
-    private javax.swing.JToggleButton jToggleButton2;
     private javax.swing.JTextField numFramesText;
     private javax.swing.JTextField numSkipFramesText;
-    private javax.swing.JTextField numStimulationCycles;
+    private javax.swing.JTextField numStimulationCyclesText;
     private javax.swing.JTextField preStimulationText;
     private javax.swing.JTextField rampBaseText;
     private javax.swing.JTextField rampEndText;
@@ -514,6 +596,7 @@ public class TrackStimGUI extends javax.swing.JFrame {
     private javax.swing.JPanel stimulatorSettingsPanel;
     private javax.swing.JButton stopBtn;
     private javax.swing.JButton testStimulatorBtn;
+    private javax.swing.JToggleButton toggleRampBtn;
     private javax.swing.JToggleButton toggleStimulatorBtn;
     private javax.swing.JPanel trackerSettingsPanel;
     // End of variables declaration//GEN-END:variables
