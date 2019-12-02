@@ -1,5 +1,5 @@
 # TrackStim
-micro-manager plugin to image moving C.Elegans
+micro-manager plugin to image moving *C. elegans*
 
 
 ## Index Of Topics
